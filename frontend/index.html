@@ -1,0 +1,3312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JOBHUNTER // TERMINAL-PRO</title>
+    <!-- Google Fonts: Press Start 2P for retro arcade headings, Share Tech Mono for telemetry, JetBrains Mono for metrics -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* ================================================
+           CYBERPUNK RETRO RETRO-ARCADE THEME VARIABLES
+           ================================================ */
+        :root {
+            --bg-cyber: #08090c;
+            --bg-console: #0f111a;
+            --bg-card: #151821;
+            --bg-field: #0a0b10;
+            
+            --border-neon-pink: #ff007f;
+            --border-neon-cyan: #00f0ff;
+            --border-neon-green: #39ff14;
+            --border-neon-gold: #ffd700;
+            --border-dark: #1b1e2e;
+            
+            --text-cyber: #00f0ff;
+            --text-muted: #6e7694;
+            --text-highlight: #ff007f;
+            --text-gold: #ffd700;
+            --text-green: #39ff14;
+            
+            --shadow-pink: 4px 4px 0px var(--border-neon-pink);
+            --shadow-cyan: 4px 4px 0px var(--border-neon-cyan);
+            --shadow-green: 4px 4px 0px var(--border-neon-green);
+            --shadow-gold: 4px 4px 0px var(--border-neon-gold);
+            --shadow-block: 4px 4px 0px #000000;
+            
+            --transition-snap: all 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            min-width: 0;
+        }
+
+        body {
+            background-color: var(--bg-cyber);
+            color: #ffffff;
+            font-family: 'Share Tech Mono', monospace;
+            padding-bottom: 60px;
+            overflow-x: hidden;
+            letter-spacing: 0;
+            /* Subtle CRT scanline overlay effect */
+            background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 6px 100%;
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-cyber);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-card);
+            border: 2px solid var(--border-neon-cyan);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-neon-pink);
+        }
+
+        /* ================================================
+           MARQUEE SYSTEM STATUS BAR
+           ================================================ */
+        .system-ticker {
+            background: #000;
+            border-bottom: 2px solid var(--border-dark);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+            padding: 6px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .ticker-content {
+            display: inline-block;
+            animation: marquee 25s linear infinite;
+        }
+        
+        @keyframes marquee {
+            0% { transform: translate3d(100%, 0, 0); }
+            100% { transform: translate3d(-100%, 0, 0); }
+        }
+
+        /* ================================================
+           HEADER & BRANDING
+           ================================================ */
+        header {
+            background: var(--bg-console);
+            border-bottom: 4px solid var(--border-neon-cyan);
+            box-shadow: 0 4px 20px rgba(0, 240, 255, 0.1);
+            padding: 20px 0;
+        }
+        
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+            gap: 20px;
+        }
+        
+        .brand-logo-container {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .brand-avatar {
+            width: 60px;
+            height: 60px;
+            border: 3px solid var(--border-neon-pink);
+            box-shadow: var(--shadow-cyan);
+            border-radius: 4px;
+            background: #000;
+            object-fit: cover;
+            image-rendering: pixelated;
+        }
+        
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .brand-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 20px;
+            color: #ffffff;
+            letter-spacing: 0;
+            text-shadow: 2px 2px 0px var(--border-neon-pink);
+            line-height: 1.35;
+        }
+        
+        .brand-title span {
+            color: var(--text-cyber);
+        }
+        
+        .brand-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0;
+            margin-top: 4px;
+        }
+        
+        /* Navigation Links */
+        .nav-links {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        
+        .nav-btn {
+            background: var(--bg-card);
+            color: var(--text-muted);
+            border: 2px solid var(--border-dark);
+            padding: 10px 18px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: var(--transition-snap);
+            position: relative;
+        }
+        
+        .nav-btn:hover {
+            color: var(--text-cyber);
+            border-color: var(--border-neon-cyan);
+            background: rgba(0, 240, 255, 0.05);
+        }
+        
+        .nav-btn.active {
+            color: #000000;
+            background: var(--border-neon-cyan);
+            border-color: var(--border-neon-cyan);
+            box-shadow: var(--shadow-pink);
+            transform: translate(-2px, -2px);
+        }
+        
+        .nav-btn .count {
+            background: #000000;
+            color: var(--text-highlight);
+            padding: 1px 6px;
+            font-size: 10px;
+            margin-left: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            border: 1px solid var(--border-neon-pink);
+        }
+        
+        .nav-btn.active .count {
+            background: var(--border-neon-pink);
+            color: #ffffff;
+            border-color: #ffffff;
+        }
+
+        /* ================================================
+           MAIN GRID STRUCTURE
+           ================================================ */
+        .main-container {
+            max-width: 1600px; /* Increased from 1400px for better telemetry display */
+            margin: 40px auto;
+            padding: 0 24px;
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 32px;
+            transition: grid-template-columns 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+        
+        .main-container.sidebar-hidden {
+            grid-template-columns: 1fr; /* Solves squished layouts on right-only panels */
+        }
+
+        .console-content {
+            min-width: 0;
+        }
+
+        /* ================================================
+           SIDE CONSOLE (LEFT)
+           ================================================ */
+        .console-sidebar {
+            background: var(--bg-console);
+            border: 3px solid var(--border-dark);
+            padding: 24px;
+            box-shadow: var(--shadow-block);
+            position: sticky;
+            top: 130px;
+            height: fit-content;
+        }
+
+        .console-sidebar::before {
+            content: "CONTROL_CONSOLE";
+            display: block;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-dark);
+            padding-bottom: 10px;
+        }
+        
+        .console-section {
+            margin-bottom: 28px;
+        }
+        
+        .console-section-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--text-gold);
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .console-telemetry-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: var(--bg-field);
+            border: 1px solid var(--border-dark);
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .console-telemetry-item .label {
+            color: var(--text-muted);
+        }
+        
+        .console-telemetry-item .value {
+            color: var(--text-cyber);
+            font-weight: bold;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        /* ================================================
+           CYBERPUNK TACTILE BUTTONS
+           ================================================ */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            text-transform: uppercase;
+            padding: 14px 22px;
+            border: 2px solid #000;
+            cursor: pointer;
+            transition: var(--transition-snap);
+            text-decoration: none;
+            width: 100%;
+            margin-bottom: 12px;
+            position: relative;
+        }
+        
+        .btn-pink {
+            background: var(--border-neon-pink);
+            color: #ffffff;
+            box-shadow: var(--shadow-block);
+        }
+        
+        .btn-pink:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px #000;
+        }
+        
+        .btn-pink:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px #000;
+        }
+        
+        .btn-cyan {
+            background: var(--border-neon-cyan);
+            color: #000000;
+            box-shadow: var(--shadow-block);
+        }
+        
+        .btn-cyan:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px #000;
+        }
+        
+        .btn-cyan:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px #000;
+        }
+        
+        .btn-gold {
+            background: var(--border-neon-gold);
+            color: #000000;
+            box-shadow: var(--shadow-block);
+        }
+        
+        .btn-gold:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px #000;
+        }
+        
+        .btn-gold:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px #000;
+        }
+
+        /* ================================================
+           DASHBOARD STAT METRICS CARDS
+           ================================================ */
+        .dashboard-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 36px;
+        }
+        
+        .telemetry-card {
+            background: var(--bg-console);
+            border: 2px solid var(--border-dark);
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-block);
+            transition: var(--transition-snap);
+        }
+        
+        .telemetry-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--border-neon-cyan);
+        }
+
+        .telemetry-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--border-neon-cyan);
+            box-shadow: 0 4px 15px rgba(0, 240, 255, 0.15);
+        }
+        
+        .telemetry-card.pink::before { background: var(--border-neon-pink); }
+        .telemetry-card.pink:hover { border-color: var(--border-neon-pink); }
+        
+        .telemetry-card.gold::before { background: var(--border-neon-gold); }
+        .telemetry-card.gold:hover { border-color: var(--border-neon-gold); }
+        
+        .telemetry-card.green::before { background: var(--border-neon-green); }
+        .telemetry-card.green:hover { border-color: var(--border-neon-green); }
+        
+        .telemetry-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 38px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 6px;
+        }
+        
+        .telemetry-label {
+            font-size: 11px;
+            font-family: 'Press Start 2P', cursive;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        /* ================================================
+           SECTION HEADERS
+           ================================================ */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            border-bottom: 2px solid var(--border-dark);
+            padding-bottom: 12px;
+        }
+        
+        .section-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            line-height: 1.6;
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+        
+        .section-title span {
+            color: var(--text-cyber);
+            text-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+        }
+
+        /* ================================================
+           CANDIDATE JOB CARDS & MATCH SCORES
+           ================================================ */
+        .cards-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        .job-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border-dark);
+            padding: 24px;
+            box-shadow: var(--shadow-block);
+            display: grid;
+            grid-template-columns: 1fr 200px;
+            gap: 24px;
+            transition: var(--transition-snap);
+            position: relative;
+        }
+        
+        .job-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--text-muted);
+        }
+        
+        .job-card.linkedin::before { background: #0077b5; }
+        .job-card.indeed::before { background: var(--border-neon-cyan); }
+        .job-card.remotive::before { background: var(--border-neon-pink); }
+        .job-card.weworkremotely::before { background: var(--border-neon-gold); }
+        .job-card.glassdoor::before { background: var(--border-neon-green); }
+        .job-card.ziprecruiter::before { background: #e60202; }
+        
+        .job-card:hover {
+            transform: translate(-3px, -3px);
+            border-color: var(--border-neon-cyan);
+            box-shadow: 6px 6px 0px rgba(0, 240, 255, 0.2);
+        }
+        
+        .job-card.high-match {
+            animation: pulse-border 2s infinite alternate;
+        }
+        
+        @keyframes pulse-border {
+            from { border-color: var(--border-dark); }
+            to { border-color: var(--border-neon-pink); box-shadow: 0 0 10px rgba(255, 0, 127, 0.2); }
+        }
+        
+        .job-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            gap: 14px;
+        }
+        
+        .job-card-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #ffffff;
+            text-decoration: none;
+            margin-bottom: 4px;
+            overflow-wrap: anywhere;
+        }
+        
+        .job-card-title:hover {
+            color: var(--text-cyber);
+        }
+        
+        .job-card-company {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--text-gold);
+        }
+        
+        .job-badge {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 7px;
+            padding: 4px 8px;
+            border: 1px solid var(--border-dark);
+            background: #000;
+            color: #ffffff;
+            white-space: nowrap;
+        }
+        
+        .job-badge.linkedin { border-color: #0077b5; color: #0077b5; }
+        .job-badge.indeed { border-color: var(--border-neon-cyan); color: var(--text-cyber); }
+        .job-badge.remotive { border-color: var(--border-neon-pink); color: var(--text-highlight); }
+        .job-badge.weworkremotely { border-color: var(--border-neon-gold); color: var(--text-gold); }
+        .job-badge.glassdoor { border-color: var(--border-neon-green); color: var(--text-green); }
+        .job-badge.ziprecruiter { border-color: #e60202; color: #e60202; }
+        
+        .job-meta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        
+        .meta-chip {
+            background: var(--bg-field);
+            border: 1px solid var(--border-dark);
+            padding: 4px 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .meta-chip span.highlight {
+            color: #ffffff;
+        }
+        
+        .job-card-desc {
+            margin-top: 14px;
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+
+        .skills-summary-box {
+            margin-top: 16px;
+            background: #090a0f;
+            border: 1px dashed var(--border-dark);
+            padding: 10px 14px;
+            font-size: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .skills-summary-box strong {
+            color: var(--text-muted);
+            margin-right: 6px;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .skill-tag {
+            background: rgba(0, 240, 255, 0.05);
+            border: 1px solid var(--border-dark);
+            padding: 2px 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+        }
+
+        .skill-tag.match {
+            color: var(--text-green);
+            border-color: rgba(57, 255, 20, 0.3);
+            background: rgba(57, 255, 20, 0.05);
+        }
+        
+        /* Actions console panel inside cards */
+        .card-console-panel {
+            border-left: 1px solid var(--border-dark);
+            padding-left: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        
+        .match-radial {
+            text-align: right;
+        }
+        
+        .score-terminal {
+            background: #000;
+            border: 1px solid var(--border-dark);
+            padding: 6px 12px;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 80px;
+        }
+        
+        .score-terminal.high { border-color: var(--border-neon-pink); }
+        .score-terminal.mid { border-color: var(--border-neon-gold); }
+        .score-terminal.low { border-color: var(--text-muted); }
+        
+        .score-terminal-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 22px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+        .score-terminal-val.high { color: var(--text-highlight); }
+        .score-terminal-val.mid { color: var(--text-gold); }
+        
+        .score-terminal-lbl {
+            font-size: 9px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+        
+        .status-badge {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 7px;
+            padding: 6px 10px;
+            border: 1px solid #000;
+            text-transform: uppercase;
+        }
+        
+        .status-badge.new { background: var(--border-neon-gold); color: #000000; }
+        .status-badge.applied { background: var(--border-neon-cyan); color: #000000; }
+        .status-badge.interview { background: var(--border-neon-pink); color: #ffffff; }
+        .status-badge.rejected { background: var(--bg-cyber); color: var(--text-muted); border-color: var(--border-dark); }
+
+        /* ================================================
+           CONSOLE FILTER BOX
+           ================================================ */
+        .filter-console {
+            background: var(--bg-console);
+            border: 2px solid var(--border-dark);
+            padding: 20px;
+            margin-bottom: 28px;
+            box-shadow: var(--shadow-block);
+        }
+        
+        .filter-row {
+            display: flex;
+            align-items: stretch; /* Stretch children to make heights equal */
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .form-input {
+            flex: 1;
+            background: var(--bg-field);
+            border: 2px solid var(--border-dark);
+            padding: 12px 16px;
+            color: #ffffff;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            min-height: 46px;
+            min-width: 180px;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--border-neon-cyan);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.35);
+            background: #0f111a;
+        }
+        
+        select.form-input {
+            cursor: pointer;
+        }
+        
+        /* Custom File Upload Styling */
+        .custom-file-upload {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-field);
+            border: 2px dashed var(--border-neon-cyan);
+            padding: 16px 20px;
+            color: var(--text-cyber);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: var(--transition-snap);
+            position: relative;
+        }
+        
+        .custom-file-upload:hover {
+            background: rgba(0, 240, 255, 0.05);
+            border-color: var(--border-neon-pink);
+            color: var(--text-highlight);
+            box-shadow: 0 0 10px rgba(255, 0, 127, 0.1);
+        }
+        
+        .custom-file-upload input[type="file"] {
+            display: none;
+        }
+
+        /* Button Light Sweep */
+        .btn {
+            position: relative;
+            overflow: hidden;
+        }
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0) 100%);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+            pointer-events: none;
+        }
+        .btn:hover::after {
+            transform: translateX(100%);
+        }
+
+        /* Upgraded Section Banners */
+        .view-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(90deg, rgba(15, 17, 26, 0.9) 0%, rgba(21, 24, 33, 0.4) 100%);
+            border: 2px solid var(--border-dark);
+            border-left: 6px solid var(--border-neon-cyan);
+            padding: 16px 24px;
+            margin-bottom: 28px;
+            position: relative;
+            box-shadow: var(--shadow-block);
+        }
+        
+        .view-banner-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .view-banner-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 11px;
+            color: #ffffff;
+            line-height: 1.4;
+        }
+        
+        .view-banner-title span {
+            color: var(--text-cyber);
+            text-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+        }
+        
+        .view-banner-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: 'Share Tech Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0;
+            line-height: 1.5;
+        }
+        
+        .view-banner-graphic {
+            width: 56px;
+            height: 56px;
+            object-fit: contain;
+            image-rendering: pixelated;
+            filter: drop-shadow(0 0 6px rgba(0, 240, 255, 0.25));
+            animation: float-pixel 3s ease-in-out infinite;
+        }
+        
+        @keyframes float-pixel {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        /* ================================================
+           CONTACTS CARDS GRID
+           ================================================ */
+        .contacts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        
+        .contacts-crm-layout.has-details .contacts-grid {
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        }
+        
+        .contact-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border-dark);
+            padding: 24px;
+            box-shadow: var(--shadow-block);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: var(--transition-snap);
+        }
+        
+        .contact-card:hover {
+            transform: translate(-3px, -3px);
+            border-color: var(--border-neon-pink);
+            box-shadow: 6px 6px 0px rgba(255, 0, 127, 0.15);
+        }
+        
+        .contact-card-name {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+        
+        .contact-card-role {
+            font-size: 13px;
+            color: var(--text-cyber);
+            margin-bottom: 16px;
+        }
+        
+        .contact-card-email {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            word-break: break-all;
+        }
+        
+        .contact-metrics-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-dark);
+            padding-top: 12px;
+            margin-bottom: 16px;
+        }
+
+        /* ================================================
+           PROFILE PANEL FORM LAYOUT
+           ================================================ */
+        .panel-container {
+            background: var(--bg-console);
+            border: 2px solid var(--border-dark);
+            padding: 32px;
+            box-shadow: var(--shadow-block);
+            margin-bottom: 32px;
+        }
+        
+        .panel-header-row {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+            margin-bottom: 32px;
+            border-bottom: 1px solid var(--border-dark);
+            padding-bottom: 24px;
+        }
+        
+        .panel-avatar {
+            width: 80px;
+            height: 80px;
+            background: var(--bg-cyber);
+            color: var(--text-highlight);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 3px solid var(--border-neon-pink);
+            box-shadow: var(--shadow-cyan);
+            border-radius: 4px;
+        }
+        
+        .panel-title-text h2 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 16px;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+        
+        .panel-title-text p {
+            color: var(--text-cyber);
+            font-size: 14px;
+        }
+
+        .form-row-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        
+        .form-field-group {
+            margin-bottom: 24px;
+        }
+        
+        .form-field-label {
+            display: block;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        
+        .form-textarea {
+            width: 100%;
+            background: var(--bg-field);
+            border: 1px solid var(--border-dark);
+            padding: 12px 16px;
+            color: #ffffff;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 15px;
+            height: 140px;
+            resize: vertical;
+        }
+        
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--border-neon-cyan);
+        }
+
+        /* ================================================
+           MODAL TERMINAL STYLE
+           ================================================ */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 20px;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal-box {
+            background: var(--bg-console);
+            border: 3px solid var(--border-neon-cyan);
+            width: 100%;
+            max-width: 640px;
+            padding: 32px;
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
+            position: relative;
+        }
+        
+        .modal-box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--border-dark);
+            padding-bottom: 12px;
+        }
+        
+        .modal-box-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 11px;
+            color: var(--text-cyber);
+        }
+        
+        .modal-box-close {
+            background: var(--border-neon-pink);
+            border: 1px solid #000;
+            color: #ffffff;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 11px;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .modal-box-close:hover {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        .auth-gate {
+            position: fixed;
+            inset: 0;
+            background: rgba(8, 9, 12, 0.98);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 5000;
+            padding: 20px;
+        }
+
+        .auth-gate.active {
+            display: flex;
+        }
+
+        .auth-panel {
+            width: 100%;
+            max-width: 420px;
+            background: var(--bg-console);
+            border: 3px solid var(--border-neon-cyan);
+            box-shadow: var(--shadow-cyan);
+            padding: 28px;
+        }
+
+        .auth-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 13px;
+            color: #ffffff;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .auth-copy {
+            color: var(--text-muted);
+            font-size: 13px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .auth-error {
+            display: none;
+            color: var(--text-highlight);
+            border: 1px solid var(--border-neon-pink);
+            background: rgba(255, 0, 127, 0.08);
+            padding: 10px;
+            font-size: 12px;
+            margin-bottom: 16px;
+        }
+
+        .auth-error.active {
+            display: block;
+        }
+        
+        /* ================================================
+           PROGRESS RUNNING STATE PANEL
+           ================================================ */
+        .run-status-console {
+            background: #050608;
+            border: 2px solid var(--border-neon-pink);
+            padding: 20px;
+            margin-bottom: 28px;
+            display: none;
+            box-shadow: 0 0 15px rgba(255, 0, 127, 0.15);
+        }
+        
+        .run-status-console.active {
+            display: block;
+        }
+        
+        .run-status-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 9px;
+            color: var(--text-highlight);
+            margin-bottom: 20px;
+        }
+        
+        .running-spinner {
+            width: 16px;
+            height: 16px;
+            border: 3px solid #1a1a24;
+            border-top-color: var(--border-neon-pink);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        
+        .console-log-row {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(0,0,0,0.4);
+            padding: 8px 14px;
+            border: 1px solid var(--border-dark);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+        
+        /* ================================================
+           TOAST NOTIFICATION ARCHITECTURE
+           ================================================ */
+        .toast-terminal-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .toast-terminal {
+            background: var(--bg-console);
+            color: #ffffff;
+            border: 2px solid var(--border-neon-cyan);
+            padding: 16px 24px;
+            box-shadow: var(--shadow-block);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideIn 0.2s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+        
+        .toast-terminal.error {
+            border-color: var(--border-neon-pink);
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(120%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        /* Loader global screen spinner */
+        .global-loading-barrier {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(8, 9, 12, 0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 4000;
+        }
+        
+        .global-loading-barrier.active {
+            display: flex;
+        }
+        
+        .global-loader {
+            width: 80px;
+            height: 80px;
+            border: 6px solid #1a2233;
+            border-top-color: var(--border-neon-cyan);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .view-panel {
+            display: none;
+        }
+        
+        .view-panel.active {
+            display: block;
+        }
+        
+        @media (max-width: 1100px) {
+            .main-container { grid-template-columns: 1fr; }
+            .console-sidebar { display: none; }
+            .contacts-grid { grid-template-columns: repeat(2, 1fr); }
+            .header-container {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+            .nav-links {
+                justify-content: flex-start;
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            header { padding: 14px 0; }
+            .header-container,
+            .main-container {
+                padding-left: 14px;
+                padding-right: 14px;
+            }
+            .main-container {
+                margin: 24px auto;
+                gap: 20px;
+            }
+            .brand-logo-container { align-items: flex-start; }
+            .brand-avatar {
+                width: 48px;
+                height: 48px;
+            }
+            .brand-title { font-size: 15px; }
+            .brand-subtitle { font-size: 10px; }
+            .nav-links {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+            }
+            .nav-btn {
+                width: 100%;
+                padding: 10px 8px;
+                font-size: 12px;
+            }
+            .dashboard-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .contacts-grid { grid-template-columns: 1fr; }
+            .job-card { grid-template-columns: 1fr; }
+            .job-header-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .card-console-panel {
+                border-left: none;
+                border-top: 1px dashed var(--border-dark);
+                padding-left: 0;
+                padding-top: 16px;
+                align-items: flex-start;
+            }
+            .filter-row { flex-direction: column; }
+            .filter-row .form-input,
+            .filter-row .btn,
+            #jobSourceFilter,
+            #jobStatusFilter {
+                width: 100% !important;
+                max-width: none !important;
+            }
+            .section-header,
+            .view-banner {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 14px;
+            }
+            .view-banner > div:last-child {
+                align-self: stretch;
+                justify-content: space-between;
+                flex-wrap: wrap;
+            }
+            .panel-container,
+            .modal-box {
+                padding: 20px;
+            }
+            .form-row-2col {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+            .form-row-2col .form-field-group {
+                grid-column: auto !important;
+            }
+            #profileLinks {
+                flex-wrap: wrap;
+            }
+            .toast-terminal-container {
+                left: 14px;
+                right: 14px;
+                bottom: 14px;
+            }
+            .toast-terminal {
+                width: 100%;
+            }
+            .auth-panel {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .dashboard-stats-grid,
+            .nav-links {
+                grid-template-columns: 1fr;
+            }
+            .telemetry-value {
+                font-size: 30px;
+            }
+            .job-card,
+            .contact-card,
+            .doc-card {
+                padding: 16px;
+            }
+            .doc-actions,
+            .kanban-card-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .doc-actions .btn,
+            .kanban-card-actions .btn,
+            .kanban-card-actions .form-input {
+                width: 100% !important;
+            }
+        }
+
+        /* ================================================
+           KANBAN BOARD SYSTEM (APPLICATIONS)
+           ================================================ */
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            align-items: start;
+            margin-top: 10px;
+        }
+        
+        @media (max-width: 1200px) {
+            .kanban-board {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .kanban-board {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .kanban-column {
+            background: rgba(9, 10, 15, 0.6);
+            border: 2px solid var(--border-dark);
+            min-height: 550px;
+            display: flex;
+            flex-direction: column;
+            border-radius: 6px;
+            box-shadow: var(--shadow-block);
+        }
+        
+        .kanban-column-header {
+            padding: 14px 16px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 9px;
+            border-bottom: 2px solid var(--border-dark);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .kanban-column-header.col-cyan { color: var(--border-neon-cyan); border-bottom-color: var(--border-neon-cyan); }
+        .kanban-column-header.col-pink { color: var(--border-neon-pink); border-bottom-color: var(--border-neon-pink); }
+        .kanban-column-header.col-gold { color: var(--border-neon-gold); border-bottom-color: var(--border-neon-gold); }
+        .kanban-column-header.col-muted { color: var(--text-muted); border-bottom-color: var(--border-dark); }
+        
+        .kanban-column-header .badge {
+            background: #000000;
+            border: 1px solid currentColor;
+            padding: 2px 6px;
+            font-size: 8px;
+            border-radius: 2px;
+        }
+        
+        .kanban-cards-container {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex-grow: 1;
+            overflow-y: auto;
+            max-height: 650px;
+            min-height: 150px;
+        }
+        
+        /* thin scrollbar for kanban lists */
+        .kanban-cards-container::-webkit-scrollbar {
+            width: 4px;
+        }
+        .kanban-cards-container::-webkit-scrollbar-thumb {
+            background: var(--border-dark);
+            border-radius: 2px;
+        }
+        .kanban-cards-container::-webkit-scrollbar-thumb:hover {
+            background: var(--border-neon-cyan);
+        }
+        
+        .kanban-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border-dark);
+            padding: 14px;
+            box-shadow: 2px 2px 0px #000;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: var(--transition-snap);
+            padding-left: 18px; /* Room for card color accent indicator */
+            border-radius: 4px;
+        }
+        
+        .kanban-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--border-dark);
+            border-top-left-radius: 2px;
+            border-bottom-left-radius: 2px;
+        }
+        
+        .kanban-card.card-applied::before { background: var(--border-neon-cyan); }
+        .kanban-card.card-interview::before { background: var(--border-neon-pink); }
+        .kanban-card.card-offer::before { background: var(--border-neon-gold); }
+        .kanban-card.card-rejected::before { background: var(--text-muted); }
+        
+        .kanban-card:hover {
+            transform: translate(-3px, -3px);
+            box-shadow: 5px 5px 0px #000;
+            border-color: #ffffff;
+        }
+        
+        .kanban-card-title {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 15px;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 0 0 4px 0;
+            line-height: 1.2;
+            word-wrap: break-word;
+        }
+        
+        .kanban-card-company {
+            font-size: 13px;
+            color: var(--text-cyber);
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .kanban-card-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        
+        .kanban-card-notes {
+            font-size: 11px;
+            background: #090a0f;
+            border: 1px solid var(--border-dark);
+            padding: 6px;
+            margin-bottom: 12px;
+            word-break: break-all;
+            font-family: 'Share Tech Mono', monospace;
+            color: #d1d1d1;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+        
+        .kanban-card-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border-dark);
+            padding-top: 8px;
+            margin-top: auto;
+            gap: 4px;
+        }
+
+        /* ================================================
+           CONTACTS CRM STYLES
+           ================================================ */
+        .contacts-crm-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            transition: all 0.3s ease;
+        }
+        
+        .contacts-crm-layout.has-details {
+            grid-template-columns: 1fr 380px;
+        }
+        
+        @media (max-width: 1000px) {
+            .contacts-crm-layout.has-details {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .contact-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border-dark);
+            box-shadow: var(--shadow-block);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            cursor: pointer;
+            transition: var(--transition-snap);
+        }
+        
+        .contact-card:hover, .contact-card.selected {
+            transform: translate(-3px, -3px);
+            border-color: var(--border-neon-cyan);
+            box-shadow: 6px 6px 0px rgba(0, 240, 255, 0.2);
+        }
+        
+        .contact-card.selected {
+            border-color: var(--border-neon-pink);
+            box-shadow: 6px 6px 0px rgba(255, 0, 127, 0.2);
+        }
+        
+        .contact-card-name {
+            font-size: 17px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+        
+        .contact-card-role {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        
+        .contact-card-email {
+            font-size: 13px;
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--text-cyber);
+            margin-bottom: 12px;
+        }
+        
+        .contact-metrics-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-dark);
+            padding-top: 8px;
+            margin-top: 12px;
+            margin-bottom: 12px;
+            font-family: 'Press Start 2P', cursive;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .details-panel {
+            background: var(--bg-card);
+            border: 2px solid var(--border-neon-cyan);
+            padding: 24px;
+            max-height: 800px;
+            overflow-y: auto;
+            position: sticky;
+            top: 20px;
+            border-radius: 6px;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+            min-width: 0;
+        }
+        
+        .email-log-item {
+            background: #090a0f;
+            border: 1px solid var(--border-dark);
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 4px;
+        }
+        
+        .email-log-subject {
+            font-size: 13px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+        
+        .email-log-date {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        
+        .email-log-body {
+            font-size: 12px;
+            font-family: 'Share Tech Mono', monospace;
+            color: #bbbbbb;
+            white-space: pre-wrap;
+        }
+ 
+        /* ================================================
+           DOCUMENTS VAULT SYSTEM
+           ================================================ */
+        .document-manager-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+        
+        @media (max-width: 960px) {
+            .document-manager-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .document-list-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 16px;
+        }
+        
+        .doc-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border-dark);
+            box-shadow: var(--shadow-block);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            transition: var(--transition-snap);
+            border-radius: 4px;
+        }
+        
+        .doc-card:hover {
+            transform: translate(-3px, -3px);
+            border-color: var(--border-neon-pink);
+            box-shadow: 6px 6px 0px rgba(255, 0, 127, 0.2);
+        }
+        
+        .doc-badge {
+            align-self: flex-start;
+            font-size: 8px;
+            font-family: 'Press Start 2P', cursive;
+            padding: 4px 8px;
+            border: 1px solid currentColor;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            border-radius: 2px;
+        }
+        
+        .doc-badge.cv { color: var(--border-neon-cyan); }
+        .doc-badge.certificate { color: var(--border-neon-green); }
+        .doc-badge.cover_letter { color: var(--border-neon-gold); }
+        .doc-badge.portfolio { color: #bb86fc; }
+        .doc-badge.other { color: var(--text-muted); }
+        
+        .doc-title {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 15px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .doc-filename {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            font-family: 'Share Tech Mono', monospace;
+            overflow-wrap: anywhere;
+        }
+        
+        .doc-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px dashed var(--border-dark);
+            padding-top: 8px;
+        }
+        
+        .doc-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .empty-telemetry {
+            text-align: center;
+            padding: 48px 24px;
+            border: 2px dashed var(--border-dark);
+            background: var(--bg-console);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 9px;
+            color: var(--text-muted);
+            grid-column: 1 / -1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Scrolling ticker bar -->
+<div class="system-ticker">
+    <div class="ticker-content">
+        [SYSTEM: ONLINE] // [DATABASE: SQLITE HYBRID ACTIVE] // [TELEMETRY FEED: CONNECTED] // [INTEGRATIONS: WEBHOOK DESPATCHER LOADED] // [SCRAPE SPEED: HIGH RESILIENCE FALLBACK ACTIVATED] // [VERSION: 4.0.1_RETRO]
+    </div>
+</div>
+
+<!-- Loader Screen Overlay -->
+<div class="global-loading-barrier" id="loadingOverlay">
+    <div class="global-loader"></div>
+</div>
+
+<!-- Auth Gate -->
+<div class="auth-gate" id="authGate">
+    <div class="auth-panel">
+        <div class="auth-title">JOBHUNTER//LOGIN</div>
+        <div class="auth-copy">Acceso local protegido para tus oportunidades, documentos y contactos.</div>
+        <div class="auth-error" id="authError"></div>
+        <div class="form-field-group">
+            <label class="form-field-label">Usuario</label>
+            <input type="text" class="form-input" id="loginUsername" autocomplete="username" placeholder="admin">
+        </div>
+        <div class="form-field-group">
+            <label class="form-field-label">Password</label>
+            <input type="password" class="form-input" id="loginPassword" autocomplete="current-password" placeholder="AUTH_PASSWORD">
+        </div>
+        <button class="btn btn-cyan" onclick="login()">ENTRAR</button>
+    </div>
+</div>
+
+<!-- Header -->
+<header>
+    <div class="header-container">
+        <div class="brand-logo-container">
+            <img src="./cyber_banana.png" alt="Cyber Banana Logo" class="brand-avatar" id="brandLogo">
+            <div class="brand-text">
+                <div class="brand-title">JOBHUNTER//<span>PRO</span></div>
+                <div class="brand-subtitle">Console Telemetry v4.0</div>
+            </div>
+        </div>
+        <div class="nav-links">
+            <button class="nav-btn active" data-view="dashboard" onclick="switchView('dashboard')">Telemetry</button>
+            <button class="nav-btn" data-view="jobs" onclick="switchView('jobs')">Jobs <span class="count" id="jobsCount">0</span></button>
+            <button class="nav-btn" data-view="contacts" onclick="switchView('contacts')">Contacts</button>
+            <button class="nav-btn" data-view="applications" onclick="switchView('applications')">Applications</button>
+            <button class="nav-btn" data-view="documents" onclick="switchView('documents')">Documents</button>
+            <button class="nav-btn" data-view="profile" onclick="switchView('profile')">Configuration</button>
+            <button class="nav-btn" id="logoutBtn" style="display:none;" onclick="logout()">Logout</button>
+        </div>
+    </div>
+</header>
+
+<!-- Main Grid -->
+<div class="main-container" id="mainContainer">
+
+    <!-- Left Sidebar Console -->
+    <div class="console-sidebar" id="sidebar">
+        <div class="console-section">
+            <div class="console-section-title">TELEMETRY_LOG</div>
+            <div class="console-telemetry-item">
+                <span class="label">Total Vacancies</span>
+                <span class="value" id="totalJobsCount">0</span>
+            </div>
+            <div class="console-telemetry-item">
+                <span class="label">Applications Sent</span>
+                <span class="value" id="sidebarApplied">0</span>
+            </div>
+            <div class="console-telemetry-item">
+                <span class="label">Recruiters Logged</span>
+                <span class="value" id="sidebarContacts">0</span>
+            </div>
+        </div>
+        
+        <div class="console-section">
+            <div class="console-section-title">DIRECT_CMDS</div>
+            <button class="btn btn-pink" onclick="openModal('scrapeModal')">
+                🔍 RUN CRAWLER
+            </button>
+            <button class="btn btn-cyan" onclick="openModal('contactModal')">
+                ➕ ADD CONTACT
+            </button>
+        </div>
+    </div>
+
+    <!-- Right Content Area -->
+    <div class="console-content">
+        
+        <!-- Dashboard Telemetry View -->
+        <div class="view-panel active" id="dashboardView">
+            <div class="dashboard-stats-grid">
+                <div class="telemetry-card">
+                    <div class="telemetry-value" id="statJobs">0</div>
+                    <div class="telemetry-label">Ofertas</div>
+                </div>
+                <div class="telemetry-card pink">
+                    <div class="telemetry-value" id="statNew">0</div>
+                    <div class="telemetry-label">Nuevas</div>
+                </div>
+                <div class="telemetry-card gold">
+                    <div class="telemetry-value" id="statApplications">0</div>
+                    <div class="telemetry-label">Postulado</div>
+                </div>
+                <div class="telemetry-card green">
+                    <div class="telemetry-value" id="statContacts">0</div>
+                    <div class="telemetry-label">Contactos</div>
+                </div>
+            </div>
+            
+            <div class="section-header">
+                <div class="section-title">LATEST_VACANCIES_INDEX // <span>COINCIDENCIAS RECIENTES</span></div>
+                <button class="btn btn-cyan" style="width:auto;margin:0;" onclick="switchView('jobs')">VER DETALLES</button>
+            </div>
+            
+            <div class="cards-list" id="latestJobs">
+                <!-- Loaded dynamically -->
+            </div>
+        </div>
+        
+        <!-- Jobs Catalog View -->
+        <div class="view-panel" id="jobsView">
+            <div class="filter-console">
+                <div class="filter-row">
+                    <input type="text" class="form-input" id="jobSearch" placeholder="Filtro de búsqueda por título, empresa o skill...">
+                    <select class="form-input" id="jobSourceFilter" style="max-width:160px;">
+                        <option value="">Fuente: Todo</option>
+                        <option value="linkedin">LinkedIn</option>
+                        <option value="indeed">Indeed</option>
+                        <option value="remotive">Remotive</option>
+                        <option value="weworkremotely">WeWorkRemotely</option>
+                        <option value="glassdoor">Glassdoor</option>
+                        <option value="ziprecruiter">ZipRecruiter</option>
+                    </select>
+                    <select class="form-input" id="jobStatusFilter" style="max-width:160px;">
+                        <option value="">Estado: Todo</option>
+                        <option value="new">Nuevo (Sin ver)</option>
+                        <option value="applied">Postulado</option>
+                        <option value="interview">Entrevista</option>
+                        <option value="rejected">Rechazado</option>
+                    </select>
+                    <button class="btn btn-pink" style="width:auto;margin:0;" onclick="searchJobs()">FILTRAR</button>
+                </div>
+            </div>
+            
+            <!-- Scraping progress console -->
+            <div class="run-status-console" id="scrapingProgress">
+                <div class="run-status-header">
+                    <div class="running-spinner"></div>
+                    <span>CRAWLING OPERATIONAL_CYCLES IN PROGRESS...</span>
+                </div>
+                <div id="scrapingSources"></div>
+            </div>
+            
+            <div class="section-header">
+                <div class="section-title">VACANCIES_DB_MANAGEMENT // <span>CATÁLOGO DE EMPLEOS</span></div>
+                <button class="btn btn-pink" style="width:auto;margin:0;" onclick="openModal('scrapeModal')">🔍 RUN SCRAPER</button>
+            </div>
+            
+            <div class="cards-list" id="allJobs">
+                <!-- Loaded dynamically -->
+            </div>
+        </div>
+        
+    <!-- Contacts View -->
+    <div class="view-panel" id="contactsView">
+        <div class="view-banner" style="border-left-color: var(--border-neon-pink);">
+            <div class="view-banner-info">
+                <div class="view-banner-title">RECRUITERS_CRM_DIRECTORY // <span>DIRECTORIO DE RECLUTADORES</span></div>
+                <div class="view-banner-desc">CRM de seguimiento de contactos y registro histórico de emails de outreach</div>
+            </div>
+            <img src="./pixel_recruiter.png" alt="CRM Graphic" class="view-banner-graphic">
+        </div>
+
+        <div class="filter-console" style="margin-bottom:20px;">
+            <div class="filter-row">
+                <input type="text" class="form-input" id="contactSearch" placeholder="Filtro de búsqueda por nombre, empresa o cargo..." oninput="filterContacts()">
+                <button class="btn btn-cyan" style="width:auto;margin:0;" onclick="openModal('contactModal')">➕ NUEVO CONTACTO</button>
+            </div>
+        </div>
+        
+        <div class="contacts-crm-layout" id="contactsCrmLayout">
+            <div class="contacts-grid" id="contactsGrid">
+                <!-- Loaded dynamically -->
+            </div>
+            
+            <!-- Interaction logs panel (Right Column) -->
+            <div class="panel-container details-panel" id="contactDetailsPanel" style="display:none;border-color:var(--border-neon-cyan);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--border-dark);padding-bottom:8px;">
+                    <div class="console-section-title" style="margin:0;font-size:10px;color:var(--text-cyber);">📋 CONTACT_LOGS</div>
+                    <button class="btn btn-pink" style="width:auto;padding:2px 8px;margin:0;font-size:9px;line-height:1;" onclick="closeContactDetails()">&times; CLOSE</button>
+                </div>
+                <div id="contactDetailsContent">
+                    <!-- Loaded dynamically when a contact is selected -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Applications View -->
+    <div class="view-panel" id="applicationsView">
+        <div class="view-banner" style="border-left-color: var(--border-neon-cyan);">
+            <div class="view-banner-info">
+                <div class="view-banner-title">APPLICATIONS_PIPELINE // <span>FLUJO DE POSTULACIONES ACTIVAS</span></div>
+                <div class="view-banner-desc">Tablero kanban interactivo de seguimiento de candidaturas en tiempo real</div>
+            </div>
+            <div style="display:flex;gap:16px;align-items:center;">
+                <button class="btn btn-cyan" style="width:auto;margin:0;height:44px;" onclick="openModal('applicationModal')">➕ POSTULACIÓN MANUAL</button>
+                <img src="./pixel_pipeline.png" alt="Pipeline Graphic" class="view-banner-graphic">
+            </div>
+        </div>
+        
+        <div class="kanban-board">
+            <!-- Applied Column -->
+            <div class="kanban-column" data-status="applied">
+                <div class="kanban-column-header col-cyan">
+                    <span>POSTULADO</span>
+                    <span class="badge" id="countApplied">0</span>
+                </div>
+                <div class="kanban-cards-container" id="colAppliedContainer">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+            
+            <!-- Interview Column -->
+            <div class="kanban-column" data-status="interview">
+                <div class="kanban-column-header col-pink">
+                    <span>ENTREVISTAS</span>
+                    <span class="badge" id="countInterview">0</span>
+                </div>
+                <div class="kanban-cards-container" id="colInterviewContainer">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+            
+            <!-- Offer Column -->
+            <div class="kanban-column" data-status="offer">
+                <div class="kanban-column-header col-gold">
+                    <span>OFERTA</span>
+                    <span class="badge" id="countOffer">0</span>
+                </div>
+                <div class="kanban-cards-container" id="colOfferContainer">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+            
+            <!-- Rejected Column -->
+            <div class="kanban-column" data-status="rejected">
+                <div class="kanban-column-header col-muted">
+                    <span>RECHAZADO</span>
+                    <span class="badge" id="countRejected">0</span>
+                </div>
+                <div class="kanban-cards-container" id="colRejectedContainer">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documents View -->
+    <div class="view-panel" id="documentsView">
+        <div class="view-banner" style="border-left-color: var(--border-neon-gold);">
+            <div class="view-banner-info">
+                <div class="view-banner-title">DOCUMENTS_REGISTRY // <span>CARGA Y GESTIÓN DE EXPEDIENTE</span></div>
+                <div class="view-banner-desc">Vault de almacenamiento para CVs, certificados y cartas de presentación</div>
+            </div>
+            <img src="./pixel_vault.png" alt="Vault Graphic" class="view-banner-graphic">
+        </div>
+        
+        <div class="document-manager-layout">
+            <!-- Dropzone / Form Panel -->
+            <div class="panel-container upload-panel">
+                <div class="console-section-title" style="margin-bottom:16px;">📥 UPLOAD_NEW_DOCUMENT</div>
+                <form id="documentUploadForm" onsubmit="event.preventDefault();" style="display:flex;flex-direction:column;gap:16px;">
+                    <div class="form-field-group">
+                        <label class="form-field-label">Nombre para Mostrar *</label>
+                        <input type="text" class="form-input" id="docName" placeholder="Ej: CV Principal 2026, Título Ingeniero" required>
+                    </div>
+                    <div class="form-field-group">
+                        <label class="form-field-label">Tipo de Documento</label>
+                        <select class="form-input" id="docType">
+                            <option value="cv">Currículum Vitae (CV)</option>
+                            <option value="certificate">Certificación / Diploma</option>
+                            <option value="cover_letter">Carta de Presentación</option>
+                            <option value="portfolio">Muestrario / Portafolio</option>
+                            <option value="other">Otro Documento</option>
+                        </select>
+                    </div>
+                    <div class="form-field-group">
+                        <label class="form-field-label">Seleccionar Archivo *</label>
+                        <label class="custom-file-upload">
+                            <input type="file" id="docFile" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" onchange="updateFileLabel(this)" required>
+                            <span id="fileUploadLabel">📡 SCAN_DEVICE // CARGAR ARCHIVO</span>
+                        </label>
+                        <span class="telemetry-label" style="font-size:8px;margin-top:6px;display:block;color:var(--text-muted);">PDF, DOCX, PNG, JPG (MÁX 10MB)</span>
+                    </div>
+                    <button type="button" class="btn btn-pink" onclick="uploadDocument()" style="margin-top:10px;">⚡ INJECT_DOCUMENT</button>
+                </form>
+            </div>
+            
+            <!-- Catalog Grid -->
+            <div class="panel-container catalog-panel">
+                <div class="console-section-title" style="margin-bottom:16px;">📁 DOCUMENT_VAULT</div>
+                <div class="document-list-grid" id="documentsGrid">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Profile & Settings View -->
+    <div class="view-panel" id="profileView">
+        <div class="panel-container" style="margin-bottom:24px;">
+            <div class="panel-header-row" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px;">
+                <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
+                    <div class="panel-avatar" id="profileAvatar">JD</div>
+                    <div class="panel-title-text">
+                        <h2 id="profileName">Demo Candidate</h2>
+                        <p id="profileHeadline">Backend Engineer</p>
+                        <div style="display:flex;gap:8px;margin-top:12px;" id="profileLinks">
+                            <!-- Links loaded dynamically -->
+                        </div>
+                    </div>
+                </div>
+                <div class="profile-telemetry-badge" style="background:#000;border:2px solid var(--border-dark);border-left:4px solid var(--border-neon-pink);padding:14px;font-size:11px;font-family:'JetBrains Mono',monospace;border-radius:4px;box-shadow:var(--shadow-block);">
+                    <div style="color:var(--text-highlight);font-weight:bold;margin-bottom:4px;font-family:'Press Start 2P',cursive;font-size:7px;">MATCHING_SYSTEM: ACTIVE</div>
+                    <div style="color:var(--text-muted);font-size:10px;">PROFILE SYNC: 100% SECURE</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="view-banner" style="border-left-color: var(--border-neon-green);">
+            <div class="view-banner-info">
+                <div class="view-banner-title">CONFIGURATION_REGISTRY // <span>AJUSTES Y DATOS DEL CANDIDATO</span></div>
+                <div class="view-banner-desc">Parametrización del motor de matching y credenciales de contacto</div>
+            </div>
+            <img src="./cyber_banana.png" alt="Config Graphic" class="view-banner-graphic" style="border-radius: 4px;">
+        </div>
+            
+            <div style="display:grid;grid-template-columns:1fr;gap:24px;">
+                <!-- Telemetry 1: Datos Personales -->
+                <div class="panel-container">
+                    <div class="console-section-title" style="margin-bottom:16px;color:var(--text-cyber);">👤 TELEMETRY_01 // DATOS PERSONALES</div>
+                    <div class="form-row-2col">
+                        <div class="form-field-group">
+                            <label class="form-field-label">Nombre Completo</label>
+                            <input type="text" class="form-input" id="formName" placeholder="Tu nombre">
+                        </div>
+                        <div class="form-field-group">
+                            <label class="form-field-label">Correo Principal</label>
+                            <input type="email" class="form-input" id="formEmail" placeholder="correo@ejemplo.com">
+                        </div>
+                        <div class="form-field-group">
+                            <label class="form-field-label">Teléfono</label>
+                            <input type="text" class="form-input" id="formPhone" placeholder="+34 000 00 00">
+                        </div>
+                        <div class="form-field-group">
+                            <label class="form-field-label">Ubicación</label>
+                            <input type="text" class="form-input" id="formLocation" placeholder="Madrid, España / Remoto">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Telemetry 2: Perfil Profesional -->
+                <div class="panel-container">
+                    <div class="console-section-title" style="margin-bottom:16px;color:var(--text-highlight);">💼 TELEMETRY_02 // PERFIL PROFESIONAL</div>
+                    <div class="form-row-2col">
+                        <div class="form-field-group" style="grid-column: span 2;">
+                            <label class="form-field-label">Headline Profesional</label>
+                            <input type="text" class="form-input" id="formHeadline" placeholder="Backend Developer (Python / SQLite)">
+                        </div>
+                        <div class="form-field-group">
+                            <label class="form-field-label">Portafolio URL</label>
+                            <input type="url" class="form-input" id="formPortfolio" placeholder="https://example.com/portfolio">
+                        </div>
+                        <div class="form-field-group">
+                            <label class="form-field-label">GitHub URL</label>
+                            <input type="url" class="form-input" id="formGithub" placeholder="https://github.com/usuario">
+                        </div>
+                        <div class="form-field-group" style="grid-column: span 2;">
+                            <label class="form-field-label">LinkedIn URL</label>
+                            <input type="url" class="form-input" id="formLinkedin" placeholder="https://linkedin.com/in/perfil">
+                        </div>
+                        <div class="form-field-group" style="grid-column: span 2;">
+                            <label class="form-field-label">Links adicionales</label>
+                            <textarea class="form-textarea" id="formSocialLinks" style="height:96px;" placeholder="Calendly | https://calendly.com/usuario&#10;Blog | https://example.com/blog"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="form-field-group" style="margin-top:16px;">
+                        <label class="form-field-label">Resumen Profesional (Bio)</label>
+                        <textarea class="form-textarea" id="formBio" style="height:100px;" placeholder="Experto en backend..."></textarea>
+                    </div>
+                    
+                    <div class="form-field-group" style="margin-top:16px;">
+                        <label class="form-field-label">Habilidades para el Matching (Separadas por comas)</label>
+                        <input type="text" class="form-input" id="formSkills" placeholder="Python, FastAPI, SQLite, React, Docker, Git">
+                    </div>
+                </div>
+
+                <!-- Telemetry 3: Alertas e Integraciones -->
+                <div class="panel-container" style="border-color:var(--border-neon-gold);">
+                    <div class="console-section-title" style="margin-bottom:16px;color:var(--text-gold);">📡 TELEMETRY_03 // ALERTAS E INTEGRACIONES</div>
+                    <div class="form-field-group">
+                        <label class="form-field-label">Webhook Discord / Slack / Telegram URL</label>
+                        <input type="url" class="form-input" id="formWebhook" placeholder="https://discord.com/api/webhooks/...">
+                        <span style="font-size:11px;color:var(--text-muted);display:block;margin-top:6px;">
+                            El sistema enviará una alerta automática si el match score calculado es mayor o igual a 80%.
+                        </span>
+                    </div>
+                </div>
+
+                <div style="display:flex;justify-content:flex-end;">
+                    <button type="button" class="btn btn-pink" style="width:auto;padding-left:40px;padding-right:40px;" onclick="saveProfile()">
+                        💾 GUARDAR CAMBIOS DE TELEMETRÍA
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+<!-- Scrape Modal -->
+<div class="modal-overlay" id="scrapeModal">
+    <div class="modal-box">
+        <div class="modal-box-header">
+            <h3 class="modal-box-title">🔍 CRAWLER SETTINGS</h3>
+            <button class="modal-box-close" onclick="closeModal('scrapeModal')">&times;</button>
+        </div>
+        <div class="form-field-group">
+            <label class="form-field-label">Palabras Clave (Keywords)</label>
+            <input type="text" class="form-input" id="scrapeKeywords" placeholder="Python Developer, FastAPI">
+        </div>
+        <div class="form-field-group">
+            <label class="form-field-label">Ubicación</label>
+            <input type="text" class="form-input" id="scrapeLocation" placeholder="Remote, Spain">
+        </div>
+        <div class="form-field-group">
+            <label class="form-field-label">Límite por Fuente</label>
+            <select class="form-input" id="scrapeLimit">
+                <option value="5">5 empleos</option>
+                <option value="15" selected>15 empleos</option>
+                <option value="30">30 empleos</option>
+                <option value="50">50 empleos</option>
+            </select>
+        </div>
+        <div class="form-field-group">
+            <label class="form-field-label">Canales Activos</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input type="checkbox" value="weworkremotely" checked> WeWorkRemotely (RSS)
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input type="checkbox" value="remotive" checked> Remotive (API)
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input type="checkbox" value="linkedin" checked> LinkedIn (BS4)
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input type="checkbox" value="indeed" checked> Indeed (BS4)
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input type="checkbox" value="glassdoor"> Glassdoor (BS4)
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input type="checkbox" value="ziprecruiter"> ZipRecruiter (BS4)
+                </label>
+            </div>
+        </div>
+        <button class="btn btn-pink" style="margin-top:10px;" onclick="startScraping()">🏁 RUN TRACKING SEQUENCE</button>
+    </div>
+</div>
+
+<!-- Contact Modal -->
+<div class="modal-overlay" id="contactModal">
+    <div class="modal-box">
+        <div class="modal-box-header">
+            <h3 class="modal-box-title">👥 REGISTER NEW CONTACT</h3>
+            <button class="modal-box-close" onclick="closeModal('contactModal')">&times;</button>
+        </div>
+        <div class="form-field-group">
+            <label class="form-field-label">Nombre del Contacto *</label>
+            <input type="text" class="form-input" id="contactName" placeholder="Sarah Jenkins">
+        </div>
+        <div class="form-field-group">
+            <label class="form-field-label">Email *</label>
+            <input type="email" class="form-input" id="contactEmail" placeholder="sarah@corp.com">
+        </div>
+        <div class="form-field-group">
+            <label class="form-field-label">Empresa</label>
+            <input type="text" class="form-input" id="contactCompany" placeholder="Google / Amazon">
+        </div>
+        <div class="form-field-group">
+            <label class="form-field-label">Cargo</label>
+            <input type="text" class="form-input" id="contactRole" placeholder="Tech Recruiter">
+        </div>
+        <div class="form-field-group">
+            <label class="form-field-label">LinkedIn URL</label>
+            <input type="url" class="form-input" id="contactLinkedin" placeholder="https://linkedin.com/in/...">
+        </div>
+        <div class="form-field-group">
+            <label class="form-field-label">Notas</label>
+            <textarea class="form-textarea" id="contactNotes" style="height:80px;" placeholder="Detalles extra..."></textarea>
+        </div>
+        <button class="btn btn-cyan" onclick="addContact()">💾 SAVE CONTACT DATA</button>
+    </div>
+</div>
+
+<!-- Outreach Email Modal -->
+<div class="modal-overlay" id="emailModal">
+    <div class="modal-box" style="border-color:var(--border-neon-pink);box-shadow:0 0 30px rgba(255, 0, 127, 0.2);">
+        <div class="modal-box-header" style="border-color:var(--border-neon-pink);">
+            <h3 class="modal-box-title" style="color:var(--text-highlight);">✉️ OUTREACH EMAIL DISPATCHER</h3>
+            <button class="modal-box-close" onclick="closeModal('emailModal')">&times;</button>
+        </div>
+        <div class="form-field-group">
+            <label class="form-field-label">Destinatario (Email)</label>
+            <input type="text" class="form-input" id="emailTo" readonly style="background:#090a0f;color:var(--text-muted);cursor:not-allowed;">
+        </div>
+        <div class="form-field-group">
+            <label class="form-field-label">Asunto (Subject)</label>
+            <input type="text" class="form-input" id="emailSubject" placeholder="Candidatura: Backend Engineer (Python / SQLite)">
+        </div>
+        <div class="form-field-group">
+            <label class="form-field-label">Mensaje (HTML permitido)</label>
+            <textarea class="form-textarea" id="emailBody" style="height:200px;" placeholder="Estimado/a..."></textarea>
+        </div>
+        <button class="btn btn-pink" onclick="sendOutreachEmail()">🚀 DISPATCH COLD EMAIL</button>
+    </div>
+</div>
+
+<!-- Application Modal -->
+<div class="modal-overlay" id="applicationModal">
+    <div class="modal-box">
+        <div class="modal-box-header">
+            <h3 class="modal-box-title">📝 REGISTER APPLICATION</h3>
+            <button class="modal-box-close" onclick="closeModal('applicationModal')">&times;</button>
+        </div>
+        <div class="form-field-group">
+            <label class="form-field-label">Empresa *</label>
+            <input type="text" class="form-input" id="appCompany" placeholder="e.g. OpenAI">
+        </div>
+        <div class="form-field-group">
+            <label class="form-field-label">Posición *</label>
+            <input type="text" class="form-input" id="appPosition" placeholder="e.g. Backend Lead">
+        </div>
+        <div class="form-field-group">
+            <label class="form-field-label">Estado</label>
+            <select class="form-input" id="appStatus">
+                <option value="applied" selected>Postulado</option>
+                <option value="interview">Entrevista</option>
+                <option value="offer">Oferta Recibida</option>
+                <option value="rejected">Rechazado</option>
+            </select>
+        </div>
+        <div class="form-field-group">
+            <label class="form-field-label">Fecha de Postulación</label>
+            <input type="date" class="form-input" id="appDate">
+        </div>
+        <div class="form-field-group">
+            <label class="form-field-label">Notas / Bitácora</label>
+            <textarea class="form-textarea" id="appNotes" style="height:80px;" placeholder="Detalles de contacto, fecha de seguimiento..."></textarea>
+        </div>
+        <button class="btn btn-cyan" onclick="addApplication()">💾 SAVE APPLICATION</button>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-terminal-container" id="toastContainer"></div>
+
+<script>
+    // ================================================
+    // CONFIGURATION
+    // ================================================
+    const API_BASE = (() => {
+        const configured = window.JOBHUNTER_CONFIG?.API_BASE || localStorage.getItem('JOBHUNTER_API_BASE');
+        if (configured) return configured.replace(/\/$/, '');
+        const localHosts = new Set(['localhost', '127.0.0.1', '']);
+        if (localHosts.has(window.location.hostname) && window.location.port !== '8000') {
+            return 'http://localhost:8000';
+        }
+        return window.location.origin.replace(/\/$/, '') || 'http://localhost:8000';
+    })();
+    
+    // ================================================
+    // STATE
+    // ================================================
+    let jobs = [];
+    let contacts = [];
+    let applications = [];
+    let profile = {};
+    let authToken = localStorage.getItem('JOBHUNTER_AUTH_TOKEN') || '';
+    let authEnabled = false;
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, char => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        }[char]));
+    }
+
+    function safeUrl(value) {
+        try {
+            const url = new URL(String(value || ''), window.location.href);
+            if (url.protocol === 'http:' || url.protocol === 'https:') {
+                return escapeHtml(url.href);
+            }
+        } catch (error) {
+            return '#';
+        }
+        return '#';
+    }
+
+    function safeClass(value, fallback = 'unknown') {
+        const cleaned = String(value || '').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+        return cleaned || fallback;
+    }
+
+    function parseSocialLinks(text) {
+        return String(text || '')
+            .split('\n')
+            .map(line => line.trim())
+            .filter(Boolean)
+            .map(line => {
+                const separator = line.includes('|') ? '|' : ',';
+                const parts = line.split(separator).map(part => part.trim());
+                if (parts.length === 1) {
+                    return { label: parts[0].replace(/^https?:\/\//, '').split('/')[0], url: parts[0] };
+                }
+                return { label: parts[0], url: parts.slice(1).join(separator).trim() };
+            })
+            .filter(link => link.label && safeUrl(link.url) !== '#')
+            .slice(0, 12);
+    }
+
+    function formatSocialLinks(links) {
+        return (Array.isArray(links) ? links : [])
+            .map(link => `${link.label || ''} | ${link.url || ''}`.trim())
+            .filter(line => line !== '|')
+            .join('\n');
+    }
+    
+    // ================================================
+    // INITIALIZATION
+    // ================================================
+    document.addEventListener('DOMContentLoaded', async () => {
+        document.getElementById('appDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('loginPassword').addEventListener('keydown', event => {
+            if (event.key === 'Enter') login();
+        });
+        const ready = await initializeAuth();
+        if (!ready) return;
+        loadDashboard();
+        loadProfile();
+    });
+    
+    // ================================================
+    // NAVIGATION
+    // ================================================
+    function switchView(viewName) {
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.view === viewName) {
+                btn.classList.add('active');
+            }
+        });
+        
+        document.querySelectorAll('.view-panel').forEach(view => {
+            view.classList.remove('active');
+        });
+        document.getElementById(viewName + 'View').classList.add('active');
+        
+        const sidebar = document.getElementById('sidebar');
+        const mainContainer = document.getElementById('mainContainer');
+        if (viewName === 'dashboard' || viewName === 'jobs') {
+            sidebar.style.display = 'block';
+            mainContainer.classList.remove('sidebar-hidden');
+        } else {
+            sidebar.style.display = 'none';
+            mainContainer.classList.add('sidebar-hidden');
+        }
+        
+        switch(viewName) {
+            case 'jobs':
+                loadJobs();
+                break;
+            case 'contacts':
+                loadContacts();
+                break;
+            case 'applications':
+                loadApplications();
+                break;
+            case 'documents':
+                loadDocuments();
+                break;
+            case 'profile':
+                loadProfile();
+                break;
+            case 'dashboard':
+                loadDashboard();
+                break;
+        }
+    }
+    
+    // ================================================
+    // MODALS
+    // ================================================
+    function openModal(modalId) {
+        document.getElementById(modalId).classList.add('active');
+    }
+    
+    function openOutreachModal(email) {
+        document.getElementById('emailTo').value = email;
+        document.getElementById('emailSubject').value = "Contacto Profesional // Propuesta de Candidatura";
+        document.getElementById('emailBody').value = `Hola,\n\nEspero que te encuentres muy bien. Me pongo en contacto contigo sobre oportunidades laborales en desarrollo backend y arquitectura de sistemas.\n\nHe estado analizando su ecosistema y me llama enormemente la atención su enfoque. Te comparto mis credenciales:\n- GitHub: ${profile.github_url || ''}\n- LinkedIn: ${profile.linkedin_url || ''}\n\nQuedo a tu disposición para agendar una breve llamada de introducción.\n\nUn cordial saludo,\n${profile.full_name || 'Tu nombre'}`;
+        openModal('emailModal');
+    }
+    
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+    
+    // ================================================
+    // TOASTS
+    // ================================================
+    function showToast(message, isError = false) {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = 'toast-terminal' + (isError ? ' error' : '');
+        toast.innerHTML = `<span>${isError ? '⚡' : '🔥'}</span> ${escapeHtml(message)}`;
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.remove();
+        }, 4000);
+    }
+
+    // ================================================
+    // AUTH
+    // ================================================
+    async function initializeAuth() {
+        try {
+            const configRes = await fetch(API_BASE + '/api/auth/config', { credentials: 'include' });
+            const config = await configRes.json();
+            authEnabled = Boolean(config.auth_enabled);
+            document.getElementById('logoutBtn').style.display = authEnabled ? 'inline-flex' : 'none';
+
+            if (!authEnabled) {
+                document.getElementById('authGate').classList.remove('active');
+                return true;
+            }
+            if (!config.auth_configured) {
+                document.getElementById('authError').textContent = 'AUTH_ENABLED está activo, pero faltan AUTH_PASSWORD o AUTH_SECRET_KEY.';
+                document.getElementById('authError').classList.add('active');
+                document.getElementById('authGate').classList.add('active');
+                return false;
+            }
+
+            const sessionRes = await fetch(API_BASE + '/api/auth/session', {
+                credentials: 'include',
+                headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+            });
+            const session = await sessionRes.json();
+            if (session.authenticated) {
+                document.getElementById('authGate').classList.remove('active');
+                return true;
+            }
+            document.getElementById('loginUsername').value = config.username_hint || 'admin';
+            document.getElementById('authGate').classList.add('active');
+            return false;
+        } catch (error) {
+            console.error('Auth initialization error:', error);
+            showToast('No se pudo validar la sesión', true);
+            return false;
+        }
+    }
+
+    async function login() {
+        const username = document.getElementById('loginUsername').value;
+        const password = document.getElementById('loginPassword').value;
+        const errorBox = document.getElementById('authError');
+        errorBox.classList.remove('active');
+
+        try {
+            const response = await fetch(API_BASE + '/api/auth/login', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.detail || 'Login failed');
+            authToken = result.token || '';
+            if (authToken) localStorage.setItem('JOBHUNTER_AUTH_TOKEN', authToken);
+            document.getElementById('authGate').classList.remove('active');
+            document.getElementById('loginPassword').value = '';
+            showToast('Sesión iniciada');
+            loadDashboard();
+            loadProfile();
+        } catch (error) {
+            errorBox.textContent = error.message || 'Credenciales inválidas';
+            errorBox.classList.add('active');
+        }
+    }
+
+    async function logout() {
+        try {
+            await fetch(API_BASE + '/api/auth/logout', {
+                method: 'POST',
+                credentials: 'include',
+                headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+            });
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+        authToken = '';
+        localStorage.removeItem('JOBHUNTER_AUTH_TOKEN');
+        if (authEnabled) document.getElementById('authGate').classList.add('active');
+    }
+    
+    // ================================================
+    // API CALL HELPERS
+    // ================================================
+    async function apiCall(endpoint, method = 'GET', data = null) {
+        try {
+            const options = {
+                method,
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' }
+            };
+            if (authToken) {
+                options.headers.Authorization = `Bearer ${authToken}`;
+            }
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+            
+            const response = await fetch(API_BASE + endpoint, options);
+            if (!response.ok) {
+                const errDetail = await response.json();
+                if (response.status === 401 && authEnabled) {
+                    document.getElementById('authGate').classList.add('active');
+                }
+                throw new Error(errDetail.detail || response.statusText);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('API Error:', error);
+            showToast(error.message || 'Error de comunicación con la API', true);
+            return { error: error.message };
+        }
+    }
+    
+    // ================================================
+    // DASHBOARD
+    // ================================================
+    async function loadDashboard() {
+        showLoading(true);
+        try {
+            const [dashboardRes, jobsRes] = await Promise.all([
+                apiCall('/api/dashboard'),
+                apiCall('/api/jobs?limit=5')
+            ]);
+            
+            document.getElementById('statJobs').textContent = dashboardRes.jobs?.total || 0;
+            document.getElementById('statNew').textContent = dashboardRes.jobs?.by_status?.new || 0;
+            document.getElementById('statApplications').textContent = dashboardRes.applications?.total || 0;
+            document.getElementById('statContacts').textContent = dashboardRes.contacts?.total || 0;
+            
+            document.getElementById('totalJobsCount').textContent = dashboardRes.jobs?.total || 0;
+            document.getElementById('jobsCount').textContent = dashboardRes.jobs?.total || 0;
+            document.getElementById('sidebarApplied').textContent = dashboardRes.applications?.total || 0;
+            document.getElementById('sidebarContacts').textContent = dashboardRes.contacts?.total || 0;
+            
+            renderJobs(jobsRes.jobs || [], 'latestJobs');
+        } catch (error) {
+            console.error('Dashboard load error:', error);
+        }
+        showLoading(false);
+    }
+    
+    // ================================================
+    // JOBS CATALOG
+    // ================================================
+    async function loadJobs() {
+        const source = document.getElementById('jobSourceFilter').value;
+        const status = document.getElementById('jobStatusFilter').value;
+        
+        let url = '/api/jobs?limit=50';
+        if (source) url += `&source=${source}`;
+        if (status) url += `&status=${status}`;
+        
+        const response = await apiCall(url);
+        jobs = response.jobs || [];
+        const search = document.getElementById('jobSearch').value.trim().toLowerCase();
+        const filteredJobs = search
+            ? jobs.filter(job => [job.title, job.company, job.description, job.requirements]
+                .some(value => String(value || '').toLowerCase().includes(search)))
+            : jobs;
+        renderJobs(filteredJobs, 'allJobs');
+    }
+    
+    function renderJobs(jobsData, containerId) {
+        const container = document.getElementById(containerId);
+        if (jobsData.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center;padding:60px;border:2px dashed var(--border-dark);background:var(--bg-console);">
+                    <div style="font-size:36px;margin-bottom:16px;">🔍</div>
+                    <div style="font-size:10px;font-family:'Press Start 2P', cursive;color:var(--text-muted);">ZERO_VACANCIES_RETURNED</div>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = jobsData.map(job => {
+            const score = Number(job.match_score || 0);
+            const hasHighMatch = score >= 80;
+            let scoreColor = 'green';
+            if (score < 40) scoreColor = 'muted';
+            else if (score < 75) scoreColor = 'gold';
+            const source = escapeHtml(safeClass(job.source || 'manual', 'manual'));
+            const status = escapeHtml(safeClass(job.status || 'new', 'new'));
+            const title = escapeHtml(job.title || 'Sin título');
+            const company = escapeHtml(job.company || 'Empresa no indicada');
+            const location = escapeHtml(job.location || '');
+            const salary = escapeHtml(job.salary || '');
+            const postedDate = escapeHtml(job.posted_date || '');
+            const description = escapeHtml(job.description ? job.description.substring(0, 180) + '...' : 'Sin descripción detallada.');
+            const requirements = String(job.requirements || '').split(',').slice(0, 5);
+            const isLive = job.is_live === true || job.is_live === 1 || job.scrape_mode === 'live';
+            const scrapeMode = isLive ? 'LIVE' : 'DEMO';
+            
+            return `
+            <div class="job-card ${source} ${hasHighMatch ? 'high-match' : ''}">
+                <div>
+                    <div class="job-header-row">
+                        <div>
+                            <a href="${safeUrl(job.url)}" target="_blank" rel="noopener noreferrer" class="job-card-title">${title}</a>
+                            <div class="job-card-company">${company}</div>
+                        </div>
+                        <span class="job-badge ${source}">${job.source ? escapeHtml(String(job.source).toUpperCase()) : 'MANUAL'}</span>
+                    </div>
+                    
+                    <div class="job-meta-row">
+                        <div class="meta-chip" style="border-color:${isLive ? 'var(--border-neon-green)' : 'var(--border-neon-gold)'};color:${isLive ? 'var(--text-green)' : 'var(--text-gold)'};">${scrapeMode}</div>
+                        ${job.location ? `<div class="meta-chip">📍 ${location}</div>` : ''}
+                        ${job.salary ? `<div class="meta-chip">💰 ${salary}</div>` : ''}
+                        ${job.posted_date ? `<div class="meta-chip">📅 ${postedDate}</div>` : ''}
+                    </div>
+                    
+                    <div class="job-card-desc">
+                        ${description}
+                    </div>
+                    
+                    ${job.requirements ? `
+                    <div style="margin-top:12px;">
+                        <span class="telemetry-label" style="font-size:9px;">Requerimientos claves:</span>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+                            ${requirements.map(req => `<span class="skill-tag">${escapeHtml(req.trim())}</span>`).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+                
+                <div class="card-console-panel">
+                    <div>
+                        ${score ? `
+                        <div class="score-terminal">
+                            <div class="score-terminal-val ${scoreColor}">${Math.round(score)}%</div>
+                            <div class="score-terminal-lbl">Match</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    <span class="status-badge ${status}">${status}</span>
+                    <div style="display:flex;gap:8px;margin-top:12px;">
+                        ${job.status !== 'applied' ? `<button class="btn btn-cyan" style="padding:6px 10px;font-size:7px;margin:0;" onclick="updateJobStatus(${Number(job.id)}, 'applied')">APPLY</button>` : ''}
+                        <button class="btn btn-pink" style="padding:6px 10px;font-size:7px;margin:0;width:auto;" onclick="deleteJob(${Number(job.id)})">❌</button>
+                    </div>
+                </div>
+            </div>
+            `;
+        }).join('');
+    }
+    
+    async function searchJobs() {
+        await loadJobs();
+        showToast('Filtro de búsqueda aplicado');
+    }
+    
+    async function updateJobStatus(jobId, status) {
+        const response = await apiCall(`/api/jobs/${jobId}`, 'PUT', { status });
+        if (response.success) {
+            showToast(`Estado actualizado: ${status}`);
+            loadJobs();
+            loadDashboard();
+        }
+    }
+    
+    async function deleteJob(jobId) {
+        if (!confirm('¿Seguro que deseas eliminar este empleo permanentemente?')) return;
+        const response = await apiCall(`/api/jobs/${jobId}`, 'DELETE');
+        if (response.success) {
+            showToast('Empleo eliminado de la base de datos');
+            loadJobs();
+            loadDashboard();
+        }
+    }
+    
+    // ================================================
+    // SCRAPING PROGRESS CYCLES
+    // ================================================
+    async function startScraping() {
+        const keywords = document.getElementById('scrapeKeywords').value;
+        const location = document.getElementById('scrapeLocation').value;
+        const limit = parseInt(document.getElementById('scrapeLimit').value);
+        
+        const checkboxes = document.querySelectorAll('#scrapeModal input[type="checkbox"]:checked');
+        const sources = Array.from(checkboxes).map(cb => cb.value);
+        
+        if (sources.length === 0) {
+            showToast('Selecciona al menos un canal de búsqueda', true);
+            return;
+        }
+        
+        closeModal('scrapeModal');
+        
+        const progress = document.getElementById('scrapingProgress');
+        const sourcesDiv = document.getElementById('scrapingSources');
+        progress.classList.add('active');
+        sourcesDiv.innerHTML = '';
+        
+        sources.forEach(source => {
+            sourcesDiv.innerHTML += `<div class="console-log-row" id="scrape-src-${source}"><span>⏳ ${source.toUpperCase()}</span> <span>CONNECTING...</span></div>`;
+        });
+        
+        let totalJobs = 0;
+        
+        for (const source of sources) {
+            const srcEl = document.getElementById(`scrape-src-${source}`);
+            if (srcEl) {
+                srcEl.innerHTML = `<span>⚡ ${source.toUpperCase()}</span> <span>SCRAPING VACANCIES...</span>`;
+            }
+            
+            try {
+                const response = await apiCall('/api/scrape/' + source, 'POST', {
+                    keywords: keywords,
+                    location: location,
+                    limit: limit
+                });
+                
+                if (response.jobs_found > 0) {
+                    totalJobs += response.jobs_found;
+                    
+                    for (const job of response.jobs) {
+                        await apiCall('/api/jobs', 'POST', {
+                            ...job,
+                            source: source,
+                            status: 'new'
+                        });
+                    }
+                    if (srcEl) {
+                        srcEl.innerHTML = `<span style="color:var(--text-green)">✅ ${source.toUpperCase()}</span> <span style="color:var(--text-cyber)">${response.jobs_found} SYNCED (${response.live_jobs || 0} LIVE / ${response.fallback_jobs || 0} DEMO)</span>`;
+                    }
+                } else {
+                    if (srcEl) {
+                        srcEl.innerHTML = `<span style="color:var(--text-muted)">⚠️ ${source.toUpperCase()}</span> <span>0 FOUND (ANTI-SCRAPING ACTIVE)</span>`;
+                    }
+                }
+            } catch (error) {
+                console.error(`Error scraping ${source}:`, error);
+                if (srcEl) {
+                    srcEl.innerHTML = `<span style="color:var(--text-highlight)">❌ ${source.toUpperCase()}</span> <span>CONNECTION_ERROR</span>`;
+                }
+            }
+        }
+        
+        setTimeout(() => {
+            progress.classList.remove('active');
+        }, 5000);
+        
+        showToast(`Rastreo finalizado. Se agregaron ${totalJobs} empleos.`);
+        switchView('jobs');
+        loadDashboard();
+    }
+    
+    // ================================================
+    // CONTACTS CRM SYSTEM
+    // ================================================
+    let allContacts = [];
+    let selectedContactId = null;
+    
+    async function loadContacts() {
+        const response = await apiCall('/api/contacts?limit=100');
+        allContacts = response.contacts || [];
+        filterContacts();
+    }
+    
+    function filterContacts() {
+        const searchVal = document.getElementById('contactSearch').value.toLowerCase();
+        const filtered = allContacts.filter(c => 
+            (c.name || '').toLowerCase().includes(searchVal) ||
+            (c.company || '').toLowerCase().includes(searchVal) ||
+            (c.role || '').toLowerCase().includes(searchVal)
+        );
+        renderContacts(filtered);
+    }
+    
+    function renderContacts(contactsList) {
+        const container = document.getElementById('contactsGrid');
+        if (contactsList.length === 0) {
+            container.innerHTML = `
+                <div style="grid-column:1/-1;text-align:center;padding:60px;border:2px dashed var(--border-dark);background:var(--bg-console);">
+                    <div style="font-size:36px;margin-bottom:16px;">👥</div>
+                    <div style="font-size:10px;font-family:'Press Start 2P', cursive;color:var(--text-muted);">ZERO_CONTACTS_MATCHED</div>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = contactsList.map(c => `
+            <div class="contact-card ${selectedContactId === c.id ? 'selected' : ''}" onclick="selectContact(${Number(c.id)}, event)">
+                <div>
+                    <div class="contact-card-name">${escapeHtml(c.name || 'Desconocido')}</div>
+                    <div class="contact-card-role">${escapeHtml(c.role || 'Recruiter')} en <strong style="color:var(--text-cyber);">${escapeHtml(c.company || 'N/A')}</strong></div>
+                    <div class="contact-card-email">📧 ${escapeHtml(c.email || '')}</div>
+                    ${c.notes ? `<div style="font-size:12px;color:var(--text-muted);background:var(--bg-field);padding:10px;border:1px solid var(--border-dark);margin-bottom:10px;font-family:'Share Tech Mono', monospace;overflow-wrap:anywhere;">${escapeHtml(c.notes)}</div>` : ''}
+                </div>
+                <div>
+                    <div class="contact-metrics-row">
+                        <span>📨 ${Number(c.sent_emails || 0)} ENVIADOS</span>
+                        <span>🕐 ${c.last_contact ? escapeHtml(c.last_contact) : 'NUNCA'}</span>
+                    </div>
+                    <div style="display:flex;gap:8px;width:100%;" onclick="event.stopPropagation();">
+                        ${c.linkedin_url ? `<a href="${safeUrl(c.linkedin_url)}" target="_blank" rel="noopener noreferrer" class="btn btn-cyan" style="flex:1;padding:8px;font-size:7px;margin:0;text-align:center;text-decoration:none;">LINKEDIN</a>` : ''}
+                        <button class="btn btn-pink" style="padding:8px 12px;font-size:7px;margin:0;" onclick="openOutreachModal('${escapeHtml(c.email || '')}')">✉️ OUTREACH</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    async function selectContact(contactId, event) {
+        selectedContactId = contactId;
+        filterContacts();
+        
+        const c = allContacts.find(item => item.id === contactId);
+        if (!c) return;
+        
+        const layout = document.getElementById('contactsCrmLayout');
+        const detailsPanel = document.getElementById('contactDetailsPanel');
+        const contentDiv = document.getElementById('contactDetailsContent');
+        
+        layout.classList.add('has-details');
+        detailsPanel.style.display = 'block';
+        
+        contentDiv.innerHTML = `
+            <div style="text-align:center;padding:12px 0;border-bottom:1px dashed var(--border-dark);margin-bottom:16px;">
+                <div style="font-size:18px;font-weight:bold;color:#fff;overflow-wrap:anywhere;">${escapeHtml(c.name || 'Desconocido')}</div>
+                <div style="color:var(--text-cyber);font-size:13px;margin-top:4px;overflow-wrap:anywhere;">${escapeHtml(c.role || 'Recruiter')} - ${escapeHtml(c.company || 'N/A')}</div>
+            </div>
+            <div style="margin-bottom:20px;">
+                <div class="telemetry-label" style="margin-bottom:6px;">Detalles del Recopilador</div>
+                <div style="font-size:13px;line-height:1.6;color:#ccc;background:#090a0f;padding:12px;border:1px solid var(--border-dark);overflow-wrap:anywhere;">
+                    <strong>Email:</strong> ${escapeHtml(c.email || '')}<br>
+                    <strong>LinkedIn:</strong> ${c.linkedin_url ? `<a href="${safeUrl(c.linkedin_url)}" target="_blank" rel="noopener noreferrer" style="color:var(--text-cyber);">${escapeHtml(c.linkedin_url)}</a>` : 'N/A'}<br>
+                    <strong>Registrado:</strong> ${c.created_at ? escapeHtml(String(c.created_at).split('T')[0]) : 'N/A'}
+                </div>
+            </div>
+            <div>
+                <div class="telemetry-label" style="margin-bottom:12px;">Historial de Mensajes</div>
+                <div id="contactEmailsLog" style="display:flex;flex-direction:column;gap:12px;">
+                    <div style="font-size:12px;color:var(--text-muted);text-align:center;">Extrayendo telemetría de emails...</div>
+                </div>
+            </div>
+        `;
+        
+        try {
+            const response = await apiCall(`/api/emails?contact_id=${contactId}`);
+            const emails = response.emails || [];
+            const emailsDiv = document.getElementById('contactEmailsLog');
+            
+            if (emails.length === 0) {
+                emailsDiv.innerHTML = `
+                    <div style="text-align:center;padding:20px;border:1px dashed var(--border-dark);background:#090a0f;font-size:12px;color:var(--text-muted);">
+                        SISTEMA: NO SE DETECTA OUTREACH RECIENTE
+                    </div>
+                `;
+                return;
+            }
+            
+            emailsDiv.innerHTML = emails.map(e => `
+                <div class="email-log-item">
+                    <div class="email-log-subject">📧 ${escapeHtml(e.subject || '')}</div>
+                    <div class="email-log-date">Fecha: ${escapeHtml(e.sent_date || '')} | Status: <span style="color:var(--text-green);">${escapeHtml(e.status || '')}</span></div>
+                    <div class="email-log-body">${escapeHtml(e.body || '')}</div>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Error fetching contact email history:', error);
+            document.getElementById('contactEmailsLog').innerHTML = `
+                <div style="text-align:center;padding:12px;color:var(--text-highlight);">
+                    ERROR TELEMETRY
+                </div>
+            `;
+        }
+    }
+    
+    function closeContactDetails() {
+        selectedContactId = null;
+        const layout = document.getElementById('contactsCrmLayout');
+        const detailsPanel = document.getElementById('contactDetailsPanel');
+        layout.classList.remove('has-details');
+        detailsPanel.style.display = 'none';
+        filterContacts();
+    }
+    
+    async function addContact() {
+        const name = document.getElementById('contactName').value;
+        const email = document.getElementById('contactEmail').value;
+        
+        if (!name || !email) {
+            showToast('El nombre y el correo son obligatorios', true);
+            return;
+        }
+        
+        const payload = {
+            name,
+            email,
+            company: document.getElementById('contactCompany').value,
+            role: document.getElementById('contactRole').value,
+            linkedin_url: document.getElementById('contactLinkedin').value,
+            notes: document.getElementById('contactNotes').value
+        };
+        
+        const response = await apiCall('/api/contacts', 'POST', payload);
+        if (response.success) {
+            showToast('Contacto registrado correctamente');
+            closeModal('contactModal');
+            loadContacts();
+            loadDashboard();
+        }
+    }
+    
+    // ================================================
+    // OUTREACH EMAILS COLD-CAMPAIGNS
+    // ================================================
+    async function sendOutreachEmail() {
+        const email = document.getElementById('emailTo').value;
+        const subject = document.getElementById('emailSubject').value;
+        const body = document.getElementById('emailBody').value;
+        
+        if (!subject || !body) {
+            showToast('El asunto y el cuerpo son obligatorios', true);
+            return;
+        }
+        
+        showLoading(true);
+        closeModal('emailModal');
+        
+        const response = await apiCall('/api/email/send', 'POST', {
+            contact_email: email,
+            subject: subject,
+            body: body
+        });
+        
+        showLoading(false);
+        if (response.success) {
+            showToast(response.message || 'Correo de outreach enviado');
+            loadContacts();
+        } else {
+            showToast(response.error || 'Error al despachar correo', true);
+        }
+    }
+    
+    // ================================================
+    // APPLICATIONS KANBAN PIPELINE
+    // ================================================
+    async function loadApplications() {
+        const response = await apiCall('/api/applications');
+        applications = response.applications || [];
+        renderApplicationsKanban();
+    }
+    
+    function renderApplicationsKanban() {
+        const colApplied = document.getElementById('colAppliedContainer');
+        const colInterview = document.getElementById('colInterviewContainer');
+        const colOffer = document.getElementById('colOfferContainer');
+        const colRejected = document.getElementById('colRejectedContainer');
+        
+        colApplied.innerHTML = '';
+        colInterview.innerHTML = '';
+        colOffer.innerHTML = '';
+        colRejected.innerHTML = '';
+        
+        let counts = { applied: 0, interview: 0, offer: 0, rejected: 0 };
+        
+        applications.forEach(app => {
+            const status = app.status || 'applied';
+            counts[status] = (counts[status] || 0) + 1;
+            const safeStatus = escapeHtml(safeClass(status, 'applied'));
+            
+            const cardHtml = `
+                <div class="kanban-card card-${safeStatus}">
+                    <div class="kanban-card-title">${escapeHtml(app.position || 'Sin puesto')}</div>
+                    <div class="kanban-card-company">${escapeHtml(app.company || 'Sin empresa')}</div>
+                    <div class="kanban-card-meta">
+                        📅 Postulado: ${app.applied_date ? escapeHtml(app.applied_date) : 'N/A'}<br>
+                        ${app.follow_up_date ? `📌 Seguimiento: ${escapeHtml(app.follow_up_date)}` : ''}
+                    </div>
+                    ${app.notes ? `<div class="kanban-card-notes">${escapeHtml(app.notes)}</div>` : ''}
+                    
+                    <div class="kanban-card-actions">
+                        <select class="form-input" style="font-size:9px;padding:2px 4px;height:24px;width:auto;margin:0;min-height:24px;" onchange="updateApplicationStatus(${Number(app.id)}, this.value)">
+                            <option value="applied" ${status === 'applied' ? 'selected' : ''}>Applied</option>
+                            <option value="interview" ${status === 'interview' ? 'selected' : ''}>Interview</option>
+                            <option value="offer" ${status === 'offer' ? 'selected' : ''}>Offer</option>
+                            <option value="rejected" ${status === 'rejected' ? 'selected' : ''}>Rejected</option>
+                        </select>
+                        <button class="btn btn-pink" style="padding:2px 8px;font-size:8px;margin:0;width:auto;height:24px;" onclick="deleteApplication(${Number(app.id)})">❌</button>
+                    </div>
+                </div>
+            `;
+            
+            if (status === 'applied') colApplied.innerHTML += cardHtml;
+            else if (status === 'interview') colInterview.innerHTML += cardHtml;
+            else if (status === 'offer') colOffer.innerHTML += cardHtml;
+            else if (status === 'rejected') colRejected.innerHTML += cardHtml;
+        });
+        
+        document.getElementById('countApplied').textContent = counts.applied;
+        document.getElementById('countInterview').textContent = counts.interview;
+        document.getElementById('countOffer').textContent = counts.offer;
+        document.getElementById('countRejected').textContent = counts.rejected;
+        
+        if (colApplied.innerHTML === '') colApplied.innerHTML = '<div style="font-size:10px;color:var(--text-muted);text-align:center;padding:20px 0;">VACÍO</div>';
+        if (colInterview.innerHTML === '') colInterview.innerHTML = '<div style="font-size:10px;color:var(--text-muted);text-align:center;padding:20px 0;">VACÍO</div>';
+        if (colOffer.innerHTML === '') colOffer.innerHTML = '<div style="font-size:10px;color:var(--text-muted);text-align:center;padding:20px 0;">VACÍO</div>';
+        if (colRejected.innerHTML === '') colRejected.innerHTML = '<div style="font-size:10px;color:var(--text-muted);text-align:center;padding:20px 0;">VACÍO</div>';
+    }
+    
+    async function updateApplicationStatus(appId, status) {
+        showLoading(true);
+        const response = await apiCall(`/api/applications/${appId}`, 'PUT', { status });
+        showLoading(false);
+        if (response.success) {
+            showToast(`Postulación movida a: ${status.toUpperCase()}`);
+            loadApplications();
+            loadDashboard();
+        }
+    }
+    
+    async function deleteApplication(appId) {
+        if (!confirm('¿Seguro que deseas eliminar esta postulación del registro?')) return;
+        showLoading(true);
+        const response = await apiCall(`/api/applications/${appId}`, 'DELETE');
+        showLoading(false);
+        if (response.success) {
+            showToast('Postulación eliminada del registro');
+            loadApplications();
+            loadDashboard();
+        }
+    }
+    
+    async function addApplication() {
+        const company = document.getElementById('appCompany').value;
+        const position = document.getElementById('appPosition').value;
+        
+        if (!company || !position) {
+            showToast('Empresa y puesto son obligatorios', true);
+            return;
+        }
+        
+        const payload = {
+            company,
+            position,
+            status: document.getElementById('appStatus').value,
+            applied_date: document.getElementById('appDate').value,
+            notes: document.getElementById('appNotes').value
+        };
+        
+        const response = await apiCall('/api/applications', 'POST', payload);
+        if (response.success) {
+            showToast('Postulación registrada exitosamente');
+            closeModal('applicationModal');
+            loadApplications();
+            loadDashboard();
+        }
+    }
+    
+    // ================================================
+    // DOCUMENTS VAULT SERVICES
+    // ================================================
+    async function loadDocuments() {
+        showLoading(true);
+        try {
+            const response = await fetch(API_BASE + '/api/documents', {
+                credentials: 'include',
+                headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+            });
+            const data = await response.json();
+            const docs = data.documents || [];
+            renderDocuments(docs);
+        } catch (error) {
+            console.error('Error loading documents:', error);
+            showToast('Error cargando documentos', true);
+        }
+        showLoading(false);
+    }
+    
+    function renderDocuments(docs) {
+        const container = document.getElementById('documentsGrid');
+        if (docs.length === 0) {
+            container.innerHTML = `<div class="empty-telemetry">VAULT_EMPTY // SIN ARCHIVOS REGISTRADOS</div>`;
+            return;
+        }
+        
+        container.innerHTML = docs.map(d => {
+            const sizeKB = Math.round(d.file_size / 102.4) / 10;
+            const dateStr = d.uploaded_at ? String(d.uploaded_at).split('T')[0] : 'N/A';
+            const type = escapeHtml(safeClass(d.file_type || 'other', 'other'));
+            return `
+                <div class="doc-card">
+                    <div>
+                        <span class="doc-badge ${type}">${type}</span>
+                        <div class="doc-title" title="${escapeHtml(d.name || '')}">${escapeHtml(d.name || 'Sin nombre')}</div>
+                        <div class="doc-filename" title="${escapeHtml(d.filename || '')}">📂 ${escapeHtml(d.filename || '')}</div>
+                    </div>
+                    <div>
+                        <div class="doc-meta">
+                            <span>📦 ${Number.isFinite(sizeKB) ? sizeKB : 0} KB</span>
+                            <span>📅 ${escapeHtml(dateStr)}</span>
+                        </div>
+                        <div class="doc-actions">
+                            <a href="${API_BASE}/api/documents/download/${Number(d.id)}" class="btn btn-cyan" style="flex:1;padding:8px;font-size:7px;margin:0;text-align:center;text-decoration:none;">DOWNLOAD</a>
+                            <button class="btn btn-pink" style="padding:8px 12px;font-size:7px;margin:0;width:auto;" onclick="deleteDocument(${Number(d.id)})">DELETE</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function updateFileLabel(input) {
+        const label = document.getElementById('fileUploadLabel');
+        const file = input.files && input.files[0];
+        label.textContent = file ? file.name : '📡 SCAN_DEVICE // CARGAR ARCHIVO';
+    }
+    
+    async function uploadDocument() {
+        const name = document.getElementById('docName').value;
+        const type = document.getElementById('docType').value;
+        const fileInput = document.getElementById('docFile');
+        const file = fileInput.files[0];
+        
+        if (!name || !file) {
+            showToast('El nombre y el archivo son obligatorios', true);
+            return;
+        }
+        
+        showLoading(true);
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('file_type', type);
+        formData.append('file', file);
+        
+        try {
+            const response = await fetch(API_BASE + '/api/documents', {
+                method: 'POST',
+                credentials: 'include',
+                headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+                body: formData
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                showToast('Documento indexado y guardado en Vault');
+                document.getElementById('documentUploadForm').reset();
+                loadDocuments();
+            } else {
+                showToast(result.detail || 'Fallo al subir documento', true);
+            }
+        } catch (error) {
+            console.error('Error uploading document:', error);
+            showToast('Error de red al subir documento', true);
+        }
+        showLoading(false);
+    }
+    
+    async function deleteDocument(docId) {
+        if (!confirm('¿Seguro que deseas eliminar este documento del Vault?')) return;
+        showLoading(true);
+        try {
+            const response = await fetch(`${API_BASE}/api/documents/${docId}`, {
+                method: 'DELETE',
+                credentials: 'include',
+                headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+            });
+            const result = await response.json();
+            if (result.success) {
+                showToast('Documento eliminado de Vault');
+                loadDocuments();
+            } else {
+                showToast('Fallo al eliminar documento', true);
+            }
+        } catch (error) {
+            console.error('Error deleting document:', error);
+            showToast('Error de red al eliminar documento', true);
+        }
+        showLoading(false);
+    }
+    
+    // ================================================
+    // CANDIDATE PROFILE LOAD & SAVE
+    // ================================================
+    async function loadProfile() {
+        const response = await apiCall('/api/profile');
+        profile = response.profile || {};
+        
+        if (profile.full_name) {
+            document.getElementById('profileName').textContent = profile.full_name;
+            const initials = profile.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            document.getElementById('profileAvatar').textContent = initials;
+        }
+        if (profile.headline) {
+            document.getElementById('profileHeadline').textContent = profile.headline;
+        }
+        
+        const linksContainer = document.getElementById('profileLinks');
+        linksContainer.innerHTML = '';
+        if (profile.portfolio_url) linksContainer.innerHTML += `<a href="${safeUrl(profile.portfolio_url)}" target="_blank" rel="noopener noreferrer" style="font-size:13px;color:var(--text-cyber);text-decoration:none;border:1px solid var(--border-dark);padding:4px 10px;background:var(--bg-field);">🌐 Portafolio</a>`;
+        if (profile.github_url) linksContainer.innerHTML += `<a href="${safeUrl(profile.github_url)}" target="_blank" rel="noopener noreferrer" style="font-size:13px;color:var(--text-cyber);text-decoration:none;border:1px solid var(--border-dark);padding:4px 10px;background:var(--bg-field);">🐙 GitHub</a>`;
+        if (profile.linkedin_url) linksContainer.innerHTML += `<a href="${safeUrl(profile.linkedin_url)}" target="_blank" rel="noopener noreferrer" style="font-size:13px;color:var(--text-cyber);text-decoration:none;border:1px solid var(--border-dark);padding:4px 10px;background:var(--bg-field);">💼 LinkedIn</a>`;
+        (profile.social_links || []).forEach(link => {
+            if (!link?.url || safeUrl(link.url) === '#') return;
+            linksContainer.innerHTML += `<a href="${safeUrl(link.url)}" target="_blank" rel="noopener noreferrer" style="font-size:13px;color:var(--text-cyber);text-decoration:none;border:1px solid var(--border-dark);padding:4px 10px;background:var(--bg-field);">${escapeHtml(link.label || 'Link')}</a>`;
+        });
+        
+        document.getElementById('formName').value = profile.full_name || '';
+        document.getElementById('formEmail').value = profile.email || '';
+        document.getElementById('formPhone').value = profile.phone || '';
+        document.getElementById('formLocation').value = profile.location || '';
+        document.getElementById('formHeadline').value = profile.headline || '';
+        document.getElementById('formPortfolio').value = profile.portfolio_url || '';
+        document.getElementById('formGithub').value = profile.github_url || '';
+        document.getElementById('formLinkedin').value = profile.linkedin_url || '';
+        document.getElementById('formBio').value = profile.bio || '';
+        document.getElementById('formSkills').value = profile.skills ? profile.skills.join(', ') : '';
+        document.getElementById('formSocialLinks').value = formatSocialLinks(profile.social_links || []);
+        
+        document.getElementById('formWebhook').value = localStorage.getItem("NOTIFICATION_WEBHOOK") || '';
+    }
+    
+    async function saveProfile() {
+        const webhookUrl = document.getElementById('formWebhook').value;
+        localStorage.setItem("NOTIFICATION_WEBHOOK", webhookUrl);
+        
+        const skillsArray = document.getElementById('formSkills').value
+            .split(',')
+            .map(s => s.trim())
+            .filter(s => s.length > 0);
+            
+        const payload = {
+            full_name: document.getElementById('formName').value,
+            email: document.getElementById('formEmail').value,
+            phone: document.getElementById('formPhone').value,
+            location: document.getElementById('formLocation').value,
+            headline: document.getElementById('formHeadline').value,
+            portfolio_url: document.getElementById('formPortfolio').value,
+            github_url: document.getElementById('formGithub').value,
+            linkedin_url: document.getElementById('formLinkedin').value,
+            social_links: parseSocialLinks(document.getElementById('formSocialLinks').value),
+            bio: document.getElementById('formBio').value,
+            skills: skillsArray
+        };
+        
+        showLoading(true);
+        const response = await apiCall('/api/profile', 'POST', payload);
+        showLoading(false);
+        
+        if (response.success) {
+            showToast('Perfil actualizado e indexado exitosamente');
+            loadProfile();
+        }
+    }
+    
+    // ================================================
+    // LOADER GLOBAL
+    // ================================================
+    function showLoading(show) {
+        document.getElementById('loadingOverlay').classList.toggle('active', show);
+    }
+</script>
+</body>
+</html>

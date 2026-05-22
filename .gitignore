@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Local runtime data
+*.db
+*.sqlite
+*.sqlite3
+*.log
+backend/data/
+data/
+backend/uploads/
+backend/data/uploads/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+backend/config.env
+backend/*.local.env
+
+# Build outputs
+dist/
+build/

@@ -1,0 +1,13 @@
+{
+  "name": "jobhunter-pro",
+  "version": "1.0.0",
+  "description": "Plataforma de captación laboral con scraping inteligente",
+  "scripts": {
+    "dev": "cd backend && uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+    "start": "cd backend && uvicorn main:app --host 0.0.0.0 --port 8000",
+    "install": "pip install -r backend/requirements.txt"
+  },
+  "keywords": ["job", "hunting", "scraping", "career", "linkedin", "indeed"],
+  "author": "JobHunter Pro",
+  "license": "MIT"
+}
