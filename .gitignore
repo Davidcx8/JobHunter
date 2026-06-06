@@ -31,3 +31,5 @@ supabase/.temp/
 # Build outputs
 dist/
 build/
+.vercel/
+.vercel
