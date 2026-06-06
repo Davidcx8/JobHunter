@@ -44,6 +44,35 @@ class TestScrapers(unittest.TestCase):
         self.assertIn('payment code', job['description'])
 
     @patch('requests.Session.get')
+    def test_weworkremotely_rejects_xml_entities(self, mock_get):
+        xml_content = """<?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE rss [
+            <!ENTITY injected "SHOULD_NOT_EXPAND">
+        ]>
+        <rss version="2.0">
+            <channel>
+                <item>
+                    <title>&injected;: Python Developer</title>
+                    <link>https://weworkremotely.com/remote-jobs/injected</link>
+                    <description>&lt;p&gt;Python role&lt;/p&gt;</description>
+                    <pubDate>Wed, 20 May 2026 12:00:00 +0000</pubDate>
+                </item>
+            </channel>
+        </rss>
+        """
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.content = xml_content.encode('utf-8')
+        mock_get.return_value = mock_response
+
+        scraper = WeWorkRemotelyScraper()
+        results = scraper.search(keywords="Python", limit=1)
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["scrape_mode"], "demo")
+        self.assertNotIn("SHOULD_NOT_EXPAND", str(results))
+
+    @patch('requests.Session.get')
     def test_remotive_api_parsing(self, mock_get):
         # Mock JSON response for Remotive API
         json_data = {

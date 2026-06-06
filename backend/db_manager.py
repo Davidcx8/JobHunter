@@ -537,24 +537,15 @@ class DatabaseManager:
                 logger.warning(f"Failed to update job in Supabase: {e}")
                 return None
 
-        fields = []
-        params = []
-        if status is not None:
-            fields.append("status = ?")
-            params.append(status)
-        if match_score is not None:
-            fields.append("match_score = ?")
-            params.append(match_score)
-            
-        if not fields:
+        if status is None and match_score is None:
             return None
-            
-        params.append(job_id)
-        query = f"UPDATE jobs SET {', '.join(fields)} WHERE id = ?"
         
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute(query, params)
+            if status is not None:
+                cursor.execute("UPDATE jobs SET status = ? WHERE id = ?", (status, job_id))
+            if match_score is not None:
+                cursor.execute("UPDATE jobs SET match_score = ? WHERE id = ?", (match_score, job_id))
             conn.commit()
             
             # Retrieve updated job
@@ -773,27 +764,17 @@ class DatabaseManager:
             result = self._supabase_required().table("applications").update(updates).eq("id", app_id).execute()
             return self._normalize_record(result.data[0]) if result.data else None
 
-        updates = []
-        params = []
-        if status is not None:
-            updates.append("status = ?")
-            params.append(status)
-        if follow_up_date is not None:
-            updates.append("follow_up_date = ?")
-            params.append(follow_up_date)
-        if notes is not None:
-            updates.append("notes = ?")
-            params.append(notes)
-            
-        if not updates:
+        if status is None and follow_up_date is None and notes is None:
             return self.get_application(app_id)
-            
-        params.append(app_id)
-        query = f"UPDATE applications SET {', '.join(updates)} WHERE id = ?"
         
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute(query, params)
+            if status is not None:
+                cursor.execute("UPDATE applications SET status = ? WHERE id = ?", (status, app_id))
+            if follow_up_date is not None:
+                cursor.execute("UPDATE applications SET follow_up_date = ? WHERE id = ?", (follow_up_date, app_id))
+            if notes is not None:
+                cursor.execute("UPDATE applications SET notes = ? WHERE id = ?", (notes, app_id))
             conn.commit()
             
         return self.get_application(app_id)

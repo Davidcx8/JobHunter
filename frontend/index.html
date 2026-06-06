@@ -2304,7 +2304,7 @@
     let contacts = [];
     let applications = [];
     let profile = {};
-    let authToken = localStorage.getItem('JOBHUNTER_AUTH_TOKEN') || '';
+    localStorage.removeItem('JOBHUNTER_AUTH_TOKEN');
     let authEnabled = false;
 
     function escapeHtml(value) {
@@ -2475,8 +2475,7 @@
             }
 
             const sessionRes = await fetch(API_BASE + '/api/auth/session', {
-                credentials: 'include',
-                headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+                credentials: 'include'
             });
             const session = await sessionRes.json();
             if (session.authenticated) {
@@ -2508,8 +2507,6 @@
             });
             const result = await response.json();
             if (!response.ok) throw new Error(result.detail || 'Login failed');
-            authToken = result.token || '';
-            if (authToken) localStorage.setItem('JOBHUNTER_AUTH_TOKEN', authToken);
             document.getElementById('authGate').classList.remove('active');
             document.getElementById('loginPassword').value = '';
             showToast('Sesión iniciada');
@@ -2525,13 +2522,11 @@
         try {
             await fetch(API_BASE + '/api/auth/logout', {
                 method: 'POST',
-                credentials: 'include',
-                headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+                credentials: 'include'
             });
         } catch (error) {
             console.error('Logout error:', error);
         }
-        authToken = '';
         localStorage.removeItem('JOBHUNTER_AUTH_TOKEN');
         if (authEnabled) document.getElementById('authGate').classList.add('active');
     }
@@ -2546,9 +2541,6 @@
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' }
             };
-            if (authToken) {
-                options.headers.Authorization = `Bearer ${authToken}`;
-            }
             if (data) {
                 options.body = JSON.stringify(data);
             }
@@ -3112,8 +3104,7 @@
         showLoading(true);
         try {
             const response = await fetch(API_BASE + '/api/documents', {
-                credentials: 'include',
-                headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+                credentials: 'include'
             });
             const data = await response.json();
             const docs = data.documents || [];
@@ -3185,7 +3176,6 @@
             const response = await fetch(API_BASE + '/api/documents', {
                 method: 'POST',
                 credentials: 'include',
-                headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
                 body: formData
             });
             
@@ -3210,8 +3200,7 @@
         try {
             const response = await fetch(`${API_BASE}/api/documents/${docId}`, {
                 method: 'DELETE',
-                credentials: 'include',
-                headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+                credentials: 'include'
             });
             const result = await response.json();
             if (result.success) {

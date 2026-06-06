@@ -3,9 +3,13 @@
   "version": "1.0.0",
   "description": "Plataforma de captación laboral con scraping inteligente",
   "scripts": {
-    "dev": "cd backend && uvicorn main:app --reload --host 0.0.0.0 --port 8000",
-    "start": "cd backend && uvicorn main:app --host 0.0.0.0 --port 8000",
-    "install": "pip install -r backend/requirements.txt"
+    "dev": "cd backend && uvicorn main:app --reload --host 127.0.0.1 --port 8000",
+    "start": "cd backend && uvicorn main:app --host 127.0.0.1 --port 8000",
+    "install": "pip install -r backend/requirements.txt",
+    "test": "python3 -m pytest -q",
+    "check:prod": "python3 scripts/production_check.py",
+    "smoke": "python3 scripts/smoke_test.py",
+    "security:audit": "pip-audit -r backend/requirements.txt && bandit -r backend -x backend/__pycache__ --severity-level medium"
   },
   "keywords": ["job", "hunting", "scraping", "career", "linkedin", "indeed"],
   "author": "JobHunter Pro",

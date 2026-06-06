@@ -22,6 +22,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
+          pip install pip-audit bandit
 
       - name: Run tests
         run: pytest -q
+
+      - name: Audit Python dependencies
+        run: pip-audit -r backend/requirements.txt
+
+      - name: Run Bandit medium/high scan
+        run: bandit -r backend -x backend/__pycache__ --severity-level medium

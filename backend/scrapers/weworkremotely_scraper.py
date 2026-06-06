@@ -4,7 +4,7 @@ Utiliza el feed RSS público oficial de WeWorkRemotely para una fiabilidad del 1
 """
 
 import requests
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 import logging
 import time
 from typing import List, Dict

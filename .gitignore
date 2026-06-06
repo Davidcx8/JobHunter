@@ -20,7 +20,13 @@ backend/data/uploads/
 .env.*
 !.env.example
 backend/config.env
+backend/config.production.env
+backend/*.env
+!backend/*.example.env
 backend/*.local.env
+
+# Supabase local state
+supabase/.temp/
 
 # Build outputs
 dist/

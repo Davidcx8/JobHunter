@@ -14,7 +14,7 @@ from pathlib import Path as FsPath
 from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, HTTPException, Body, Path, Query, File, UploadFile, Form, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
@@ -24,6 +24,8 @@ from db_manager import DatabaseManager
 from matching_engine import MatchingEngine
 from integrations import EmailDispatcher, WebhookDispatcher
 from settings import settings
+
+settings.require_valid_runtime_configuration()
 
 # Scraper imports
 from scrapers.linkedin_scraper import LinkedInScraper
@@ -50,6 +52,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+}
+
+
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    response = await call_next(request)
+    for header, value in SECURITY_HEADERS.items():
+        response.headers.setdefault(header, value)
+    return response
 
 FRONTEND_DIR = FsPath(__file__).resolve().parent.parent / "frontend"
 if FRONTEND_DIR.exists():
@@ -138,6 +155,51 @@ def extract_auth_token(request: Request) -> Optional[str]:
     return request.cookies.get("jobhunter_session")
 
 
+class LoginRateLimiter:
+    def __init__(self) -> None:
+        self._failures: Dict[str, Dict[str, float]] = {}
+
+    def _key(self, request: Request, username: str) -> str:
+        forwarded_for = request.headers.get("x-forwarded-for", "").split(",", 1)[0].strip()
+        client_host = forwarded_for or (request.client.host if request.client else "unknown")
+        return f"{client_host}:{username.strip().lower()}"
+
+    def is_limited(self, request: Request, username: str) -> bool:
+        if settings.auth_login_max_failures < 1:
+            return False
+        key = self._key(request, username)
+        record = self._failures.get(key)
+        if not record:
+            return False
+        locked_until = record.get("locked_until", 0)
+        now = datetime.now(timezone.utc).timestamp()
+        if locked_until > now:
+            return True
+        if locked_until:
+            self._failures.pop(key, None)
+        return False
+
+    def record_failure(self, request: Request, username: str) -> None:
+        if settings.auth_login_max_failures < 1:
+            return
+        key = self._key(request, username)
+        record = self._failures.setdefault(key, {"count": 0, "locked_until": 0})
+        record["count"] += 1
+        if record["count"] >= settings.auth_login_max_failures:
+            record["locked_until"] = (
+                datetime.now(timezone.utc).timestamp() + settings.auth_login_lockout_seconds
+            )
+
+    def record_success(self, request: Request, username: str) -> None:
+        self._failures.pop(self._key(request, username), None)
+
+    def reset(self) -> None:
+        self._failures.clear()
+
+
+login_rate_limiter = LoginRateLimiter()
+
+
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):
     path = request.url.path
@@ -150,15 +212,18 @@ async def auth_middleware(request: Request, call_next):
         "/api/auth/login",
         "/api/auth/logout",
         "/api/auth/session",
+        "/api/health",
+        "/api/ready",
         "/app",
     )
 
     if path.startswith("/api/") and not path.startswith("/api/auth/") and db.storage_status == "supabase_unavailable":
-        return Response(
-            content=json.dumps({"detail": "STORAGE_BACKEND=supabase but Supabase is not configured or unavailable."}),
-            status_code=503,
-            media_type="application/json",
-        )
+        if path not in {"/api/health", "/api/ready"}:
+            return Response(
+                content=json.dumps({"detail": "STORAGE_BACKEND=supabase but Supabase is not configured or unavailable."}),
+                status_code=503,
+                media_type="application/json",
+            )
 
     if not settings.auth_enabled:
         return await call_next(request)
@@ -273,6 +338,38 @@ async def root():
         "auth_configured": settings.auth_configured,
     }
 
+@app.get("/api/health")
+async def health():
+    return {
+        "status": "ok",
+        "version": app.version,
+        "storage_backend": db.storage_status,
+    }
+
+@app.get("/api/ready")
+async def ready():
+    issues = []
+    if db.storage_status == "supabase_unavailable":
+        issues.append("Supabase is not configured or unavailable.")
+    if settings.auth_enabled and not settings.auth_configured:
+        issues.append("Authentication is enabled but not fully configured.")
+
+    if issues:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "not_ready",
+                "issues": issues,
+                "storage_backend": db.storage_status,
+            },
+        )
+
+    return {
+        "status": "ready",
+        "storage_backend": db.storage_status,
+        "auth_enabled": settings.auth_enabled,
+    }
+
 @app.get("/api/auth/config")
 async def auth_config():
     return {
@@ -282,16 +379,21 @@ async def auth_config():
     }
 
 @app.post("/api/auth/login")
-async def login(payload: LoginRequest, response: Response):
+async def login(payload: LoginRequest, response: Response, request: Request):
     if not settings.auth_enabled:
         return {"success": True, "auth_enabled": False}
     if not settings.auth_configured:
         raise HTTPException(status_code=503, detail="Authentication is not fully configured.")
+    if login_rate_limiter.is_limited(request, payload.username):
+        raise HTTPException(status_code=429, detail="Too many failed login attempts. Try again later.")
+
     valid_user = hmac.compare_digest(payload.username, settings.auth_username)
     valid_password = hmac.compare_digest(payload.password, settings.auth_password)
     if not valid_user or not valid_password:
+        login_rate_limiter.record_failure(request, payload.username)
         raise HTTPException(status_code=401, detail="Invalid username or password.")
 
+    login_rate_limiter.record_success(request, payload.username)
     token = create_auth_token(settings.auth_username)
     response.set_cookie(
         key="jobhunter_session",
@@ -302,7 +404,10 @@ async def login(payload: LoginRequest, response: Response):
         max_age=settings.auth_token_ttl_minutes * 60,
         path="/",
     )
-    return {"success": True, "token": token, "expires_in": settings.auth_token_ttl_minutes * 60}
+    payload = {"success": True, "expires_in": settings.auth_token_ttl_minutes * 60}
+    if settings.auth_return_bearer_token:
+        payload["token"] = token
+    return payload
 
 @app.post("/api/auth/logout")
 async def logout(response: Response):

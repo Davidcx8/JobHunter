@@ -11,6 +11,10 @@ __pycache__
 .env
 .env.*
 backend/config.env
+backend/config.production.env
+backend/*.env
+!backend/*.example.env
+supabase/.temp
 backend/data
 data
 dist

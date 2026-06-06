@@ -7,7 +7,11 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import time
+import logging
 from typing import List, Dict, Optional
+
+
+logger = logging.getLogger(__name__)
 
 class GitHubJobsScraper:
     """Scraper para oportunidades en GitHub y empresas tech"""
@@ -66,8 +70,8 @@ class GitHubJobsScraper:
                                 'posted_date': '',
                                 'description': f"Join {company.capitalize()} team",
                             })
-            except:
-                pass
+            except requests.RequestException as exc:
+                logger.warning("Failed to fetch GitHub careers page for %s: %s", company, exc)
             
             time.sleep(0.3)
         
