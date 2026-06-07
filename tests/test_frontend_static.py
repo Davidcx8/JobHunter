@@ -18,6 +18,7 @@ def test_apply_button_opens_real_job_url_before_tracking_application():
     html = FRONTEND_HTML.read_text()
 
     assert "beginApplication(" in html
+    assert "/api/jobs/${jobId}/apply-assist" in html
     assert "window.open(jobUrl, '_blank', 'noopener,noreferrer')" in html
     assert "confirm('Se abrió la oferta real" in html
 
@@ -28,4 +29,3 @@ def test_outreach_modal_can_generate_ai_email():
     assert "generateOutreachEmail(" in html
     assert "/api/email/generate" in html
     assert "GENERAR CON IA" in html
-

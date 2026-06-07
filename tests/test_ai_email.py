@@ -103,6 +103,39 @@ def test_generate_outreach_email_uses_groq_when_configured(monkeypatch, tmp_path
     assert "https://github.com/david" in captured["payload"]["messages"][1]["content"]
 
 
+def test_generate_outreach_email_accepts_grog_api_key_alias(monkeypatch, tmp_path):
+    main = import_main(monkeypatch, tmp_path, GROG_API_KEY="gsk-test-alias")
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "choices": [
+                    {"message": {"content": "Subject: Alias works\n\nHola, probemos Groq."}}
+                ]
+            }
+
+    captured = {}
+
+    def fake_post(url, headers, json, timeout):
+        captured["authorization"] = headers["Authorization"]
+        return FakeResponse()
+
+    monkeypatch.setattr(main.requests, "post", fake_post)
+    client = TestClient(main.app)
+
+    response = client.post(
+        "/api/email/generate",
+        json={"contact_email": "recruiter@example.com"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["provider"] == "groq"
+    assert captured["authorization"] == "Bearer gsk-test-alias"
+
+
 def test_generate_outreach_email_falls_back_to_contextual_template(monkeypatch, tmp_path):
     main = import_main(monkeypatch, tmp_path)
     main.db.save_profile(
@@ -132,4 +165,3 @@ def test_generate_outreach_email_falls_back_to_contextual_template(monkeypatch, 
     assert "David Candidate" in payload["subject"]
     assert "https://github.com/david" in payload["body"]
     assert "Python, FastAPI" in payload["body"]
-

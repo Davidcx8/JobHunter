@@ -560,8 +560,89 @@ def fallback_outreach_email(context: Dict[str, Any]) -> Dict[str, str]:
     return {"subject": subject, "body": body}
 
 
+def detect_apply_platform(url: str) -> str:
+    host = urlsplit(url or "").netloc.lower()
+    path = urlsplit(url or "").path.lower()
+    if "jobs.lever.co" in host or "api.lever.co" in host:
+        return "lever"
+    if "greenhouse.io" in host or "boards.greenhouse.io" in host:
+        return "greenhouse"
+    if "linkedin.com" in host:
+        return "linkedin"
+    if "indeed.com" in host:
+        return "indeed"
+    if "workday" in host or "myworkdayjobs" in host:
+        return "workday"
+    if "ashbyhq.com" in host:
+        return "ashby"
+    if "smartrecruiters.com" in host:
+        return "smartrecruiters"
+    if "icims.com" in host:
+        return "icims"
+    if path:
+        return "company_site"
+    return "unknown"
+
+
+def build_candidate_packet(profile: Dict[str, Any], documents: List[Dict[str, Any]]) -> Dict[str, Any]:
+    name_parts = str(profile.get("full_name") or "").split()
+    latest_cv = next((doc for doc in documents if str(doc.get("file_type", "")).lower() == "cv"), None)
+    return {
+        "full_name": profile.get("full_name") or "",
+        "first_name": name_parts[0] if name_parts else "",
+        "last_name": " ".join(name_parts[1:]) if len(name_parts) > 1 else "",
+        "email": profile.get("email") or "",
+        "phone": profile.get("phone") or "",
+        "location": profile.get("location") or "",
+        "headline": profile.get("headline") or "",
+        "skills": profile.get("skills") or [],
+        "links": {
+            "linkedin": profile.get("linkedin_url") or "",
+            "github": profile.get("github_url") or "",
+            "portfolio": profile.get("portfolio_url") or "",
+        },
+        "cv": {
+            "name": latest_cv.get("name") if latest_cv else "",
+            "filename": latest_cv.get("filename") if latest_cv else "",
+            "file_url": latest_cv.get("file_url") if latest_cv else "",
+        },
+    }
+
+
+def build_apply_steps(platform: str) -> List[str]:
+    base_steps = [
+        "Open the official application URL in your browser.",
+        "Use the candidate packet fields to complete the form.",
+        "Upload the CV/document from JobHunter when the ATS asks for it.",
+        "Submit manually after reviewing every field.",
+        "Return to JobHunter and confirm only after the external platform shows a submitted application.",
+    ]
+    if platform == "lever":
+        return [
+            "Open the Lever hosted application form.",
+            "Paste candidate packet fields and upload the CV.",
+            "Answer any company-specific questions manually; Lever custom questions are not exposed reliably for generic automation.",
+            *base_steps[3:],
+        ]
+    if platform == "greenhouse":
+        return [
+            "Open the Greenhouse hosted application form.",
+            "Use the candidate packet fields and upload the CV.",
+            "Do not attempt server-side Greenhouse submission unless the employer gives you its Job Board API key.",
+            *base_steps[3:],
+        ]
+    if platform in {"linkedin", "indeed"}:
+        return [
+            f"Open the {platform.capitalize()} application URL in your logged-in browser session.",
+            "Complete platform prompts, MFA, profile questions, and external redirects manually.",
+            "Use JobHunter's candidate packet and generated email/cover text as support material.",
+            *base_steps[3:],
+        ]
+    return base_steps
+
+
 def generate_groq_outreach_email(context: Dict[str, Any]) -> Optional[Dict[str, str]]:
-    api_key = os.getenv("GROQ_API_KEY", "").strip()
+    api_key = (os.getenv("GROQ_API_KEY") or os.getenv("GROG_API_KEY") or "").strip()
     if not api_key:
         return None
 
@@ -847,6 +928,37 @@ async def update_job(
 async def delete_job(job_id: int):
     success = db.delete_job(job_id)
     return {"success": success}
+
+
+@app.get("/api/jobs/{job_id}/apply-assist")
+async def apply_assist(job_id: int):
+    job = next((item for item in db.get_jobs(limit=1000) if int(item.get("id") or 0) == job_id), None)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found.")
+
+    profile = db.get_profile()
+    documents = db.get_documents()
+    apply_url = job.get("url") or ""
+    platform = detect_apply_platform(apply_url)
+    return {
+        "success": True,
+        "automation_level": "assisted",
+        "platform": platform,
+        "apply_url": apply_url,
+        "job": {
+            "id": job.get("id"),
+            "title": job.get("title"),
+            "company": job.get("company"),
+            "location": job.get("location"),
+            "source": job.get("source"),
+        },
+        "candidate": build_candidate_packet(profile, documents),
+        "steps": build_apply_steps(platform),
+        "limits": {
+            "fully_automatic": False,
+            "reason": "Most job platforms require user sessions, MFA, dynamic questions, or employer/ATS partner credentials. JobHunter assists and records the application after human confirmation.",
+        },
+    }
 
 # --- Contacts Endpoints ---
 @app.get("/api/contacts")

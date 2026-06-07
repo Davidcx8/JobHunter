@@ -2752,7 +2752,21 @@
     }
 
     async function beginApplication(jobId, encodedJobUrl) {
-        const jobUrl = decodeURIComponent(encodedJobUrl || '');
+        let jobUrl = decodeURIComponent(encodedJobUrl || '');
+        let assist = null;
+        try {
+            assist = await apiCall(`/api/jobs/${jobId}/apply-assist`);
+            jobUrl = assist.apply_url || jobUrl;
+            const packet = assist.candidate || {};
+            console.info('JobHunter Apply Assist', {
+                platform: assist.platform,
+                candidate: packet,
+                steps: assist.steps
+            });
+            showToast(`Apply Assist listo: ${assist.platform || 'external'} (${packet.full_name || 'perfil'})`);
+        } catch (error) {
+            console.warn('Apply Assist unavailable, opening raw URL.', error);
+        }
         if (jobUrl && jobUrl !== '#') {
             window.open(jobUrl, '_blank', 'noopener,noreferrer');
         }
