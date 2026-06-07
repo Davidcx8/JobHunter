@@ -1,12 +1,35 @@
 import os
 import sys
 import unittest
+import importlib
 from datetime import datetime
 
 # Adjust path to find backend modules
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "backend"))
 
 from db_manager import DatabaseManager
+
+
+def test_supabase_primary_does_not_initialize_sqlite(monkeypatch, tmp_path):
+    monkeypatch.setenv("STORAGE_BACKEND", "supabase")
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_KEY", "service-role-key")
+
+    for module_name in ["settings", "db_manager"]:
+        sys.modules.pop(module_name, None)
+
+    db_manager = importlib.import_module("db_manager")
+    monkeypatch.setattr(db_manager, "SUPABASE_AVAILABLE", True)
+    monkeypatch.setattr(db_manager, "create_client", lambda *_args, **_kwargs: object())
+    monkeypatch.setattr(
+        db_manager.DatabaseManager,
+        "init_sqlite_tables",
+        lambda _self: (_ for _ in ()).throw(AssertionError("SQLite should not initialize")),
+    )
+
+    db = db_manager.DatabaseManager(db_path=str(tmp_path / "readonly" / "jobhunter.db"))
+
+    assert db.storage_status == "supabase"
 
 class TestDatabaseManager(unittest.TestCase):
     def setUp(self):

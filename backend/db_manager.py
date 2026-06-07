@@ -23,11 +23,7 @@ class DatabaseManager:
     def __init__(self, db_path: str = "./data/jobhunter.db"):
         self.db_path = db_path
         self.storage_backend = settings.storage_backend
-        # Ensure the directory exists if a path is provided
-        dir_name = os.path.dirname(self.db_path)
-        if dir_name:
-            os.makedirs(dir_name, exist_ok=True)
-        
+
         # Initialize Supabase if credentials are present
         self.supabase_url = os.getenv("SUPABASE_URL")
         self.supabase_anon_key = os.getenv("SUPABASE_ANON_KEY")
@@ -41,9 +37,13 @@ class DatabaseManager:
                 logger.info("Supabase client initialized successfully.")
             except Exception as e:
                 logger.error(f"Failed to initialize Supabase client: {e}")
-        
-        self.init_sqlite_tables()
+
         if not self.uses_supabase_primary:
+            # Ensure the directory exists if a local SQLite path is used.
+            dir_name = os.path.dirname(self.db_path)
+            if dir_name:
+                os.makedirs(dir_name, exist_ok=True)
+            self.init_sqlite_tables()
             self.seed_mock_data_if_empty()
 
     @property
