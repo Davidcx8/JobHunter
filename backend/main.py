@@ -107,14 +107,61 @@ def _b64url_decode(data: str) -> bytes:
     return base64.urlsafe_b64decode(data + padding)
 
 
-def create_auth_token(username: str) -> str:
+PASSWORD_HASH_ITERATIONS = 310_000
+
+
+def hash_login_password(password: str, salt: str | None = None) -> tuple[str, str]:
+    password_salt = salt or secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode("utf-8"),
+        password_salt.encode("utf-8"),
+        PASSWORD_HASH_ITERATIONS,
+    )
+    return _b64url_encode(digest), password_salt
+
+
+def verify_login_password_hash(password: str, password_hash: str, password_salt: str) -> bool:
+    calculated_hash, _ = hash_login_password(password, password_salt)
+    return hmac.compare_digest(calculated_hash, password_hash)
+
+
+def get_dynamic_auth_credentials() -> Optional[Dict[str, Any]]:
+    return db.get_auth_credentials()
+
+
+def active_auth_username(credentials: Optional[Dict[str, Any]] = None) -> str:
+    credentials = credentials if credentials is not None else get_dynamic_auth_credentials()
+    return str(credentials.get("username")) if credentials else settings.auth_username
+
+
+def login_credentials_valid(username: str, password: str) -> bool:
+    credentials = get_dynamic_auth_credentials()
+    if credentials:
+        valid_user = hmac.compare_digest(username, str(credentials.get("username", "")))
+        valid_password = verify_login_password_hash(
+            password,
+            str(credentials.get("password_hash", "")),
+            str(credentials.get("password_salt", "")),
+        )
+        return valid_user and valid_password
+
+    valid_user = hmac.compare_digest(username, settings.auth_username)
+    valid_password = hmac.compare_digest(password, settings.auth_password)
+    return valid_user and valid_password
+
+
+def create_auth_token(username: str, credentials: Optional[Dict[str, Any]] = None) -> str:
     now = datetime.now(timezone.utc)
+    credentials = credentials if credentials is not None else get_dynamic_auth_credentials()
     payload = {
         "sub": username,
         "iat": int(now.timestamp()),
         "exp": int((now + timedelta(minutes=settings.auth_token_ttl_minutes)).timestamp()),
         "nonce": secrets.token_urlsafe(12),
     }
+    if credentials:
+        payload["authv"] = str(credentials.get("updated_at", ""))
     payload_raw = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
     payload_b64 = _b64url_encode(payload_raw)
     signature = hmac.new(
@@ -143,8 +190,14 @@ def verify_auth_token(token: str) -> Optional[Dict[str, Any]]:
         return None
     if int(payload.get("exp", 0)) < int(datetime.now(timezone.utc).timestamp()):
         return None
-    if payload.get("sub") != settings.auth_username:
+    credentials = get_dynamic_auth_credentials()
+    if payload.get("sub") != active_auth_username(credentials):
         return None
+    if credentials:
+        token_auth_version = str(payload.get("authv", ""))
+        current_auth_version = str(credentials.get("updated_at", ""))
+        if not token_auth_version or not hmac.compare_digest(token_auth_version, current_auth_version):
+            return None
     return payload
 
 
@@ -322,6 +375,10 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str
+
 # ==================== ENDPOINTS ====================
 
 @app.get("/")
@@ -372,10 +429,11 @@ async def ready():
 
 @app.get("/api/auth/config")
 async def auth_config():
+    credentials = get_dynamic_auth_credentials()
     return {
         "auth_enabled": settings.auth_enabled,
         "auth_configured": settings.auth_configured,
-        "username_hint": settings.auth_username if settings.auth_enabled else None,
+        "username_hint": active_auth_username(credentials) if settings.auth_enabled else None,
     }
 
 @app.post("/api/auth/login")
@@ -387,14 +445,12 @@ async def login(payload: LoginRequest, response: Response, request: Request):
     if login_rate_limiter.is_limited(request, payload.username):
         raise HTTPException(status_code=429, detail="Too many failed login attempts. Try again later.")
 
-    valid_user = hmac.compare_digest(payload.username, settings.auth_username)
-    valid_password = hmac.compare_digest(payload.password, settings.auth_password)
-    if not valid_user or not valid_password:
+    if not login_credentials_valid(payload.username, payload.password):
         login_rate_limiter.record_failure(request, payload.username)
         raise HTTPException(status_code=401, detail="Invalid username or password.")
 
     login_rate_limiter.record_success(request, payload.username)
-    token = create_auth_token(settings.auth_username)
+    token = create_auth_token(payload.username)
     response.set_cookie(
         key="jobhunter_session",
         value=token,
@@ -408,6 +464,35 @@ async def login(payload: LoginRequest, response: Response, request: Request):
     if settings.auth_return_bearer_token:
         payload["token"] = token
     return payload
+
+@app.post("/api/auth/change-password")
+async def change_password(payload: PasswordChangeRequest, request: Request, response: Response):
+    if not settings.auth_enabled:
+        raise HTTPException(status_code=400, detail="Authentication is disabled.")
+
+    session_payload = verify_auth_token(extract_auth_token(request) or "")
+    if not session_payload:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+
+    username = str(session_payload.get("sub", ""))
+    if len(payload.new_password) < 10:
+        raise HTTPException(status_code=400, detail="New password must be at least 10 characters.")
+    if not login_credentials_valid(username, payload.current_password):
+        raise HTTPException(status_code=401, detail="Current password is invalid.")
+
+    password_hash, password_salt = hash_login_password(payload.new_password)
+    credentials = db.set_auth_credentials(username, password_hash, password_salt)
+    token = create_auth_token(username, credentials)
+    response.set_cookie(
+        key="jobhunter_session",
+        value=token,
+        httponly=True,
+        secure=settings.auth_cookie_secure,
+        samesite="lax",
+        max_age=settings.auth_token_ttl_minutes * 60,
+        path="/",
+    )
+    return {"success": True}
 
 @app.post("/api/auth/logout")
 async def logout(response: Response):

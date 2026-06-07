@@ -102,3 +102,41 @@ def test_login_rate_limits_failures_and_cookie_auth_does_not_return_token(monkey
     assert login.status_code == 200
     assert "token" not in login.json()
     assert "jobhunter_session" in login.headers.get("set-cookie", "")
+
+
+def test_authenticated_user_can_change_password_without_redeploy(monkeypatch, tmp_path):
+    monkeypatch.setenv("AUTH_ENABLED", "true")
+    monkeypatch.setenv("AUTH_USERNAME", "admin")
+    monkeypatch.setenv("AUTH_PASSWORD", "old-password")
+    monkeypatch.setenv("AUTH_SECRET_KEY", "testsecret")
+    monkeypatch.setenv("DB_PATH", str(tmp_path / "auth_change.db"))
+
+    for module_name in ["settings", "db_manager", "main"]:
+        sys.modules.pop(module_name, None)
+
+    main = importlib.import_module("main")
+    client = TestClient(main.app)
+
+    assert client.post(
+        "/api/auth/change-password",
+        json={"current_password": "old-password", "new_password": "new-password"},
+    ).status_code == 401
+
+    login = client.post("/api/auth/login", json={"username": "admin", "password": "old-password"})
+    assert login.status_code == 200
+
+    wrong_current = client.post(
+        "/api/auth/change-password",
+        json={"current_password": "wrong", "new_password": "new-password"},
+    )
+    assert wrong_current.status_code == 401
+
+    changed = client.post(
+        "/api/auth/change-password",
+        json={"current_password": "old-password", "new_password": "new-password"},
+    )
+    assert changed.status_code == 200
+    assert changed.json()["success"] is True
+
+    assert client.post("/api/auth/login", json={"username": "admin", "password": "old-password"}).status_code == 401
+    assert client.post("/api/auth/login", json={"username": "admin", "password": "new-password"}).status_code == 200

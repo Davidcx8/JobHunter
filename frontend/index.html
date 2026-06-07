@@ -2124,6 +2124,25 @@
                     </div>
                 </div>
 
+                <div class="panel-container" style="border-color:var(--border-neon-cyan);">
+                    <div class="console-section-title" style="margin-bottom:16px;color:var(--text-cyber);">🔐 TELEMETRY_04 // SEGURIDAD DE ACCESO</div>
+                    <div class="form-row-2col">
+                        <div class="form-field-group">
+                            <label class="form-field-label">Contraseña actual</label>
+                            <input type="password" class="form-input" id="currentPassword" autocomplete="current-password" placeholder="AUTH_PASSWORD actual">
+                        </div>
+                        <div class="form-field-group">
+                            <label class="form-field-label">Nueva contraseña</label>
+                            <input type="password" class="form-input" id="newPassword" autocomplete="new-password" placeholder="Mínimo 10 caracteres">
+                        </div>
+                    </div>
+                    <div style="display:flex;justify-content:flex-end;margin-top:16px;">
+                        <button type="button" class="btn btn-cyan" style="width:auto;padding-left:32px;padding-right:32px;margin:0;" onclick="changePassword()">
+                            🔐 CAMBIAR CONTRASEÑA
+                        </button>
+                    </div>
+                </div>
+
                 <div style="display:flex;justify-content:flex-end;">
                     <button type="button" class="btn btn-pink" style="width:auto;padding-left:40px;padding-right:40px;" onclick="saveProfile()">
                         💾 GUARDAR CAMBIOS DE TELEMETRÍA
@@ -3287,6 +3306,35 @@
         if (response.success) {
             showToast('Perfil actualizado e indexado exitosamente');
             loadProfile();
+        }
+    }
+
+    async function changePassword() {
+        const currentPassword = document.getElementById('currentPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+
+        if (!currentPassword || !newPassword) {
+            showToast('Completa la contraseña actual y la nueva contraseña', true);
+            return;
+        }
+        if (newPassword.length < 10) {
+            showToast('La nueva contraseña debe tener al menos 10 caracteres', true);
+            return;
+        }
+
+        showLoading(true);
+        try {
+            const response = await apiCall('/api/auth/change-password', 'POST', {
+                current_password: currentPassword,
+                new_password: newPassword
+            });
+            if (response.success) {
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                showToast('Contraseña actualizada. La sesión actual sigue activa.');
+            }
+        } finally {
+            showLoading(false);
         }
     }
     

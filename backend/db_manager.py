@@ -222,6 +222,16 @@ class DatabaseManager:
             );
             """)
             self._ensure_column(cursor, "documents", "file_url", "TEXT")
+
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS auth_credentials (
+                id TEXT PRIMARY KEY,
+                username TEXT NOT NULL,
+                password_hash TEXT NOT NULL,
+                password_salt TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+            """)
             conn.commit()
             logger.info("SQLite tables verified / initialized.")
 
@@ -230,6 +240,63 @@ class DatabaseManager:
         columns = {row[1] for row in cursor.fetchall()}
         if column not in columns:
             cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+
+    def get_auth_credentials(self) -> Optional[Dict[str, Any]]:
+        """Return dynamic auth credentials if the password was changed in-app."""
+        if self.uses_supabase_primary:
+            try:
+                result = (
+                    self._supabase_required()
+                    .table("auth_credentials")
+                    .select("*")
+                    .eq("id", "primary")
+                    .limit(1)
+                    .execute()
+                )
+                data = result.data or []
+                return data[0] if data else None
+            except Exception as e:
+                logger.warning(f"Failed to read dynamic auth credentials from Supabase: {e}")
+                return None
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM auth_credentials WHERE id = ?", ("primary",))
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
+    def set_auth_credentials(self, username: str, password_hash: str, password_salt: str) -> Dict[str, Any]:
+        """Persist a hashed login password without requiring hosting env changes."""
+        now = datetime.now().isoformat()
+        payload = {
+            "id": "primary",
+            "username": username,
+            "password_hash": password_hash,
+            "password_salt": password_salt,
+            "updated_at": now,
+        }
+
+        if self.uses_supabase_primary:
+            result = self._supabase_required().table("auth_credentials").upsert(payload).execute()
+            data = result.data or []
+            return data[0] if data else payload
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                INSERT INTO auth_credentials (id, username, password_hash, password_salt, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    username=excluded.username,
+                    password_hash=excluded.password_hash,
+                    password_salt=excluded.password_salt,
+                    updated_at=excluded.updated_at
+                """,
+                ("primary", username, password_hash, password_salt, now),
+            )
+            conn.commit()
+        return payload
 
     def seed_mock_data_if_empty(self):
         """Seed mock data into database if empty, to ensure app looks alive immediately"""
