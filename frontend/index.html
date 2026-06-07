@@ -2283,6 +2283,21 @@
     </div>
 </div>
 
+<!-- Apply Assist Modal -->
+<div class="modal-overlay" id="applyAssistModal">
+    <div class="modal-box" style="border-color:var(--border-neon-gold);box-shadow:0 0 30px rgba(255, 209, 102, 0.18);">
+        <div class="modal-box-header" style="border-color:var(--border-neon-gold);">
+            <h3 class="modal-box-title" style="color:var(--text-gold);">🧭 APPLY ASSIST</h3>
+            <button class="modal-box-close" onclick="closeModal('applyAssistModal')">&times;</button>
+        </div>
+        <div id="applyAssistContent" style="display:flex;flex-direction:column;gap:16px;"></div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;">
+            <button class="btn btn-cyan" style="flex:1;" onclick="openApplyAssistUrl()">ABRIR FORMULARIO OFICIAL</button>
+            <button class="btn btn-pink" style="flex:1;" onclick="completeApplicationFromAssist()">MARCAR COMO APLICADA</button>
+        </div>
+    </div>
+</div>
+
 <!-- Application Modal -->
 <div class="modal-overlay" id="applicationModal">
     <div class="modal-box">
@@ -2346,6 +2361,7 @@
     localStorage.removeItem('JOBHUNTER_AUTH_TOKEN');
     let authEnabled = false;
     let activeOutreachContact = null;
+    let activeApplyAssist = null;
 
     function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -2753,26 +2769,65 @@
 
     async function beginApplication(jobId, encodedJobUrl) {
         let jobUrl = decodeURIComponent(encodedJobUrl || '');
-        let assist = null;
         try {
-            assist = await apiCall(`/api/jobs/${jobId}/apply-assist`);
-            jobUrl = assist.apply_url || jobUrl;
-            const packet = assist.candidate || {};
-            console.info('JobHunter Apply Assist', {
-                platform: assist.platform,
-                candidate: packet,
-                steps: assist.steps
-            });
-            showToast(`Apply Assist listo: ${assist.platform || 'external'} (${packet.full_name || 'perfil'})`);
+            activeApplyAssist = await apiCall(`/api/jobs/${jobId}/apply-assist`);
+            renderApplyAssist(activeApplyAssist);
+            openModal('applyAssistModal');
         } catch (error) {
             console.warn('Apply Assist unavailable, opening raw URL.', error);
+            activeApplyAssist = { job: { id: jobId }, apply_url: jobUrl, platform: 'external', candidate: {}, steps: [] };
+            openApplyAssistUrl();
         }
+    }
+
+    function renderApplyAssist(assist) {
+        const candidate = assist.candidate || {};
+        const links = candidate.links || {};
+        const cv = candidate.cv || {};
+        const steps = Array.isArray(assist.steps) ? assist.steps : [];
+        document.getElementById('applyAssistContent').innerHTML = `
+            <div style="padding:12px;border:1px solid var(--border-dark);background:#090a0f;">
+                <div class="telemetry-label" style="margin-bottom:8px;">Destino detectado</div>
+                <div style="color:#fff;overflow-wrap:anywhere;">${escapeHtml(assist.platform || 'external')} · ${escapeHtml(assist.job?.title || '')} · ${escapeHtml(assist.job?.company || '')}</div>
+            </div>
+            <div style="padding:12px;border:1px solid var(--border-dark);background:#090a0f;">
+                <div class="telemetry-label" style="margin-bottom:8px;">Paquete del candidato</div>
+                <div style="font-size:13px;line-height:1.7;overflow-wrap:anywhere;">
+                    <strong>Nombre:</strong> ${escapeHtml(candidate.full_name || '')}<br>
+                    <strong>Email:</strong> ${escapeHtml(candidate.email || '')}<br>
+                    <strong>Teléfono:</strong> ${escapeHtml(candidate.phone || '')}<br>
+                    <strong>LinkedIn:</strong> ${links.linkedin ? `<a href="${safeUrl(links.linkedin)}" target="_blank" rel="noopener noreferrer" style="color:var(--text-cyber);">${escapeHtml(links.linkedin)}</a>` : 'N/A'}<br>
+                    <strong>GitHub:</strong> ${links.github ? `<a href="${safeUrl(links.github)}" target="_blank" rel="noopener noreferrer" style="color:var(--text-cyber);">${escapeHtml(links.github)}</a>` : 'N/A'}<br>
+                    <strong>Portfolio:</strong> ${links.portfolio ? `<a href="${safeUrl(links.portfolio)}" target="_blank" rel="noopener noreferrer" style="color:var(--text-cyber);">${escapeHtml(links.portfolio)}</a>` : 'N/A'}<br>
+                    <strong>CV:</strong> ${escapeHtml(cv.name || cv.filename || 'No CV detectado')}
+                </div>
+            </div>
+            <div style="padding:12px;border:1px solid var(--border-dark);background:#090a0f;">
+                <div class="telemetry-label" style="margin-bottom:8px;">Pasos</div>
+                <ol style="margin:0;padding-left:20px;color:#ccc;font-size:13px;line-height:1.6;">
+                    ${steps.map(step => `<li>${escapeHtml(step)}</li>`).join('')}
+                </ol>
+            </div>
+        `;
+        showToast(`Apply Assist listo: ${assist.platform || 'external'}`);
+    }
+
+    function openApplyAssistUrl() {
+        const jobUrl = activeApplyAssist?.apply_url || '';
         if (jobUrl && jobUrl !== '#') {
             window.open(jobUrl, '_blank', 'noopener,noreferrer');
+        } else {
+            showToast('Esta oferta no tiene URL de aplicación válida', true);
         }
+    }
+
+    async function completeApplicationFromAssist() {
+        const jobId = activeApplyAssist?.job?.id;
+        if (!jobId) return;
         const confirmed = confirm('Se abrió la oferta real en una nueva pestaña. Marca como aplicada solo después de enviar la candidatura en la plataforma externa.');
         if (!confirmed) return;
         await updateJobStatus(jobId, 'applied');
+        closeModal('applyAssistModal');
         switchView('applications');
     }
     

@@ -19,6 +19,9 @@ def test_apply_button_opens_real_job_url_before_tracking_application():
 
     assert "beginApplication(" in html
     assert "/api/jobs/${jobId}/apply-assist" in html
+    assert "applyAssistModal" in html
+    assert "renderApplyAssist(" in html
+    assert "completeApplicationFromAssist(" in html
     assert "window.open(jobUrl, '_blank', 'noopener,noreferrer')" in html
     assert "confirm('Se abrió la oferta real" in html
 
