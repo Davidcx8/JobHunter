@@ -159,5 +159,34 @@ class TestScrapers(unittest.TestCase):
         self.assertEqual(results[0]["scrape_mode"], "live")
         self.assertIn("FastAPI", results[0]["requirements"])
 
+    @patch('requests.Session.get')
+    def test_web_search_scraper_uses_remotejobs_when_arbeitnow_has_no_match(self, mock_get):
+        arbeitnow_response = MagicMock()
+        arbeitnow_response.status_code = 200
+        arbeitnow_response.json.return_value = {"data": []}
+        remotejobs_response = MagicMock()
+        remotejobs_response.status_code = 200
+        remotejobs_response.json.return_value = {
+            "data": [
+                {
+                    "title": "Python Backend Engineer",
+                    "company": {"name": "Remote API Co"},
+                    "location": "Remote",
+                    "url": "https://remotejobs.org/remote-jobs/python-backend",
+                    "apply_url": "https://remotejobs.org/remote-jobs/python-backend",
+                    "description": "Build Python services.",
+                    "published_at": "2026-06-01T00:00:00Z",
+                }
+            ]
+        }
+        mock_get.side_effect = [arbeitnow_response, remotejobs_response]
+
+        scraper = WebSearchScraper()
+        results = scraper.search(keywords="Python", location="Remote", limit=5)
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["company"], "Remote API Co")
+        self.assertEqual(results[0]["url"], "https://remotejobs.org/remote-jobs/python-backend")
+
 if __name__ == "__main__":
     unittest.main()
