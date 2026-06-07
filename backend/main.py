@@ -10,6 +10,8 @@ import json
 import base64
 import hashlib
 import secrets
+import inspect
+import requests
 from pathlib import Path as FsPath
 from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, HTTPException, Body, Path, Query, File, UploadFile, Form, Request, Response
@@ -18,6 +20,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
+from urllib.parse import urlsplit, urlunsplit
 
 # Import core modules
 from db_manager import DatabaseManager
@@ -371,6 +374,20 @@ class SendEmailRequest(BaseModel):
     subject: str
     body: str
 
+class GenerateEmailRequest(BaseModel):
+    contact_email: str
+    contact_name: Optional[str] = ""
+    company: Optional[str] = ""
+    role: Optional[str] = ""
+    linkedin_url: Optional[str] = ""
+    notes: Optional[str] = ""
+    job_id: Optional[int] = None
+    job_title: Optional[str] = ""
+    job_company: Optional[str] = ""
+    job_url: Optional[str] = ""
+    tone: Optional[str] = "direct"
+    extra_context: Optional[str] = ""
+
 class LoginRequest(BaseModel):
     username: str
     password: str
@@ -378,6 +395,190 @@ class LoginRequest(BaseModel):
 class PasswordChangeRequest(BaseModel):
     current_password: str
     new_password: str
+
+
+def normalize_scrape_keywords(keywords: str) -> str:
+    """Clean common duplicated input such as 'Python DeveloperDeveloper'."""
+    cleaned_tokens = []
+    for token in re.split(r"\s+", (keywords or "").strip()):
+        if not token:
+            continue
+        collapsed = token
+        half = len(token) // 2
+        if len(token) >= 6 and len(token) % 2 == 0 and token[:half].lower() == token[half:].lower():
+            collapsed = token[:half]
+        if cleaned_tokens and cleaned_tokens[-1].lower() == collapsed.lower():
+            continue
+        cleaned_tokens.append(collapsed)
+    return " ".join(cleaned_tokens)
+
+
+def canonical_job_url(url: str) -> str:
+    if not url:
+        return ""
+    parsed = urlsplit(url.strip())
+    path = parsed.path.rstrip("/") or parsed.path
+    return urlunsplit((parsed.scheme.lower(), parsed.netloc.lower(), path, "", ""))
+
+
+def normalized_job_text(value: Any) -> str:
+    return re.sub(r"\s+", " ", str(value or "").strip().lower())
+
+
+def deduplicate_jobs(jobs: List[Dict[str, Any]], limit: int) -> tuple[List[Dict[str, Any]], int]:
+    unique_jobs: List[Dict[str, Any]] = []
+    seen_urls = set()
+    seen_semantic = set()
+
+    for job in jobs:
+        canonical_url = canonical_job_url(str(job.get("url") or ""))
+        semantic_key = (
+            normalized_job_text(job.get("title")),
+            normalized_job_text(job.get("company")),
+            normalized_job_text(job.get("location")),
+        )
+        has_semantic_key = bool(semantic_key[0] and semantic_key[1])
+
+        if canonical_url and canonical_url in seen_urls:
+            continue
+        if has_semantic_key and semantic_key in seen_semantic:
+            continue
+
+        if canonical_url:
+            seen_urls.add(canonical_url)
+        if has_semantic_key:
+            seen_semantic.add(semantic_key)
+        unique_jobs.append(job)
+        if len(unique_jobs) >= limit:
+            break
+
+    return unique_jobs, max(len(jobs) - len(unique_jobs), 0)
+
+
+def run_scraper_search(scraper: Any, keywords: str, location: str, limit: int) -> List[Dict[str, Any]]:
+    signature = inspect.signature(scraper.search)
+    kwargs: Dict[str, Any] = {"keywords": keywords, "limit": limit}
+    if "location" in signature.parameters:
+        kwargs["location"] = location
+    return scraper.search(**kwargs)
+
+
+def compact_profile_context(profile: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "full_name": profile.get("full_name") or "",
+        "headline": profile.get("headline") or "",
+        "email": profile.get("email") or "",
+        "location": profile.get("location") or "",
+        "bio": profile.get("bio") or "",
+        "skills": profile.get("skills") or [],
+        "linkedin_url": profile.get("linkedin_url") or "",
+        "github_url": profile.get("github_url") or "",
+        "portfolio_url": profile.get("portfolio_url") or "",
+        "social_links": profile.get("social_links") or [],
+    }
+
+
+def compact_document_context(documents: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    compacted = []
+    for doc in documents[:5]:
+        compacted.append(
+            {
+                "name": doc.get("name") or doc.get("filename") or "",
+                "file_type": doc.get("file_type") or "",
+                "file_url": doc.get("file_url") or "",
+            }
+        )
+    return compacted
+
+
+def parse_generated_email(content: str, fallback_subject: str) -> Dict[str, str]:
+    text = (content or "").strip()
+    subject = fallback_subject
+    body = text
+    first_line, _, remainder = text.partition("\n")
+    if first_line.lower().startswith("subject:"):
+        subject = first_line.split(":", 1)[1].strip() or fallback_subject
+        body = remainder.strip()
+    return {"subject": subject[:180], "body": body}
+
+
+def fallback_outreach_email(context: Dict[str, Any]) -> Dict[str, str]:
+    profile = context["profile"]
+    contact = context["contact"]
+    job = context.get("job") or {}
+    skills = ", ".join(profile.get("skills") or [])
+    candidate_name = profile.get("full_name") or "Candidato"
+    company = contact.get("company") or job.get("company") or "su equipo"
+    job_title = job.get("title") or context.get("job_title") or "una oportunidad relevante"
+    links = [
+        profile.get("portfolio_url"),
+        profile.get("github_url"),
+        profile.get("linkedin_url"),
+    ]
+    links_text = "\n".join(f"- {link}" for link in links if link)
+    docs = context.get("documents") or []
+    docs_text = "\n".join(f"- {doc.get('name')}" for doc in docs if doc.get("name"))
+    subject = f"{candidate_name} <> {job_title} en {company}"
+    body = (
+        f"Hola {contact.get('contact_name') or ''},\n\n"
+        f"Te escribo porque vi encaje entre mi perfil ({profile.get('headline') or 'perfil técnico'}) "
+        f"y {job_title} en {company}. Mi experiencia principal incluye {skills or 'desarrollo de software'}, "
+        "con foco en entregar sistemas mantenibles y medibles.\n\n"
+        "Enlaces relevantes:\n"
+        f"{links_text or '- Perfil y CV disponibles a solicitud'}\n\n"
+    )
+    if docs_text:
+        body += f"Documentos cargados en JobHunter para referencia:\n{docs_text}\n\n"
+    body += (
+        "Si tiene sentido, puedo compartir más contexto o coordinar una llamada breve esta semana.\n\n"
+        f"Saludos,\n{candidate_name}"
+    )
+    return {"subject": subject, "body": body}
+
+
+def generate_groq_outreach_email(context: Dict[str, Any]) -> Optional[Dict[str, str]]:
+    api_key = os.getenv("GROQ_API_KEY", "").strip()
+    if not api_key:
+        return None
+
+    model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile").strip() or "llama-3.3-70b-versatile"
+    fallback = fallback_outreach_email(context)
+    prompt = {
+        "task": "Write a concise, high-impact recruiter outreach email in Spanish unless context strongly suggests English.",
+        "requirements": [
+            "Return exactly: Subject: <subject>, blank line, then body.",
+            "Make it specific to the candidate, company, recruiter, and job.",
+            "Use confident, professional language without exaggerating facts.",
+            "Mention profile links and available documents when useful.",
+            "Do not invent experience, credentials, or attachments.",
+            "Keep the email under 180 words.",
+        ],
+        "context": context,
+    }
+    response = requests.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You write practical recruiter outreach emails from provided facts only.",
+                },
+                {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)},
+            ],
+            "temperature": 0.45,
+            "max_completion_tokens": 650,
+        },
+        timeout=20,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    content = payload.get("choices", [{}])[0].get("message", {}).get("content", "")
+    return parse_generated_email(content, fallback["subject"])
 
 # ==================== ENDPOINTS ====================
 
@@ -690,7 +891,8 @@ async def scrape_jobs(
         raise HTTPException(status_code=400, detail=f"Source '{source}' is not supported.")
         
     try:
-        found_jobs = scraper.search(keywords=req.keywords, limit=req.limit)
+        keywords = normalize_scrape_keywords(req.keywords)
+        found_jobs = run_scraper_search(scraper, keywords=keywords, location=req.location, limit=req.limit)
         now = datetime.now().isoformat()
         for job in found_jobs:
             job.setdefault("is_live", True)
@@ -702,11 +904,15 @@ async def scrape_jobs(
         if fallback_jobs and not settings.scraper_allow_fallbacks:
             found_jobs = live_jobs
 
+        found_jobs, duplicates_removed = deduplicate_jobs(found_jobs, req.limit)
+
         return {
             "source": source_lower,
+            "keywords_normalized": keywords,
             "jobs_found": len(found_jobs),
             "live_jobs": len([job for job in found_jobs if job.get("is_live")]),
             "fallback_jobs": len([job for job in found_jobs if not job.get("is_live")]),
+            "duplicates_removed": duplicates_removed,
             "fallbacks_allowed": settings.scraper_allow_fallbacks,
             "jobs": found_jobs
         }
@@ -714,6 +920,58 @@ async def scrape_jobs(
         raise HTTPException(status_code=500, detail=f"Error during scraping process: {str(e)}")
 
 # --- Outreach Email Endpoint ---
+@app.post("/api/email/generate")
+async def generate_email(req: GenerateEmailRequest):
+    profile = compact_profile_context(db.get_profile())
+    job = None
+    if req.job_id:
+        jobs = db.get_jobs(limit=500)
+        job = next((item for item in jobs if int(item.get("id") or 0) == req.job_id), None)
+    if not job and (req.job_title or req.job_company or req.job_url):
+        job = {
+            "title": req.job_title,
+            "company": req.job_company or req.company,
+            "url": req.job_url,
+        }
+
+    context = {
+        "profile": profile,
+        "contact": {
+            "contact_email": req.contact_email,
+            "contact_name": req.contact_name,
+            "company": req.company,
+            "role": req.role,
+            "linkedin_url": req.linkedin_url,
+            "notes": req.notes,
+        },
+        "job": job or {},
+        "job_title": req.job_title,
+        "tone": req.tone,
+        "extra_context": req.extra_context,
+        "documents": compact_document_context(db.get_documents()),
+    }
+
+    try:
+        generated = generate_groq_outreach_email(context)
+        provider = "groq" if generated else "template"
+    except Exception as e:
+        generated = fallback_outreach_email(context)
+        provider = "template"
+        generated["warning"] = f"Groq generation failed; template fallback used: {str(e)}"
+
+    if not generated:
+        generated = fallback_outreach_email(context)
+        provider = "template"
+
+    return {
+        "success": True,
+        "provider": provider,
+        "subject": generated["subject"],
+        "body": generated["body"],
+        **({"warning": generated["warning"]} if generated.get("warning") else {}),
+    }
+
+
 @app.post("/api/email/send")
 async def send_email(req: SendEmailRequest):
     result = EmailDispatcher.send_email(

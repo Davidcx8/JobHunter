@@ -686,6 +686,7 @@
         
         .form-input {
             flex: 1;
+            width: 100%;
             background: var(--bg-field);
             border: 2px solid var(--border-dark);
             padding: 12px 16px;
@@ -694,7 +695,9 @@
             font-size: 15px;
             transition: all 0.2s ease;
             min-height: 46px;
-            min-width: 180px;
+            min-width: 0;
+            box-sizing: border-box;
+            overflow-wrap: anywhere;
         }
         
         .form-input:focus {
@@ -949,6 +952,9 @@
             font-size: 15px;
             height: 140px;
             resize: vertical;
+            min-width: 0;
+            box-sizing: border-box;
+            overflow-wrap: anywhere;
         }
         
         .form-textarea:focus {
@@ -968,9 +974,10 @@
             background: rgba(0, 0, 0, 0.9);
             display: none;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             z-index: 2000;
             padding: 20px;
+            overflow-y: auto;
         }
         
         .modal-overlay.active {
@@ -982,9 +989,13 @@
             border: 3px solid var(--border-neon-cyan);
             width: 100%;
             max-width: 640px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
             padding: 32px;
             box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
             position: relative;
+            box-sizing: border-box;
+            margin: auto 0;
         }
         
         .modal-box-header {
@@ -1000,6 +1011,8 @@
             font-family: 'Press Start 2P', cursive;
             font-size: 11px;
             color: var(--text-cyber);
+            line-height: 1.5;
+            overflow-wrap: anywhere;
         }
         
         .modal-box-close {
@@ -2256,10 +2269,17 @@
             <input type="text" class="form-input" id="emailSubject" placeholder="Candidatura: Backend Engineer (Python / SQLite)">
         </div>
         <div class="form-field-group">
+            <label class="form-field-label">Contexto para IA</label>
+            <textarea class="form-textarea" id="emailContext" style="height:90px;" placeholder="Puesto objetivo, enlace de la oferta, tecnologías clave o detalle del reclutador..."></textarea>
+        </div>
+        <div class="form-field-group">
             <label class="form-field-label">Mensaje (HTML permitido)</label>
             <textarea class="form-textarea" id="emailBody" style="height:200px;" placeholder="Estimado/a..."></textarea>
         </div>
-        <button class="btn btn-pink" onclick="sendOutreachEmail()">🚀 DISPATCH COLD EMAIL</button>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <button class="btn btn-cyan" style="flex:1;" onclick="generateOutreachEmail()">GENERAR CON IA</button>
+            <button class="btn btn-pink" style="flex:1;" onclick="sendOutreachEmail()">🚀 DISPATCH COLD EMAIL</button>
+        </div>
     </div>
 </div>
 
@@ -2325,6 +2345,7 @@
     let profile = {};
     localStorage.removeItem('JOBHUNTER_AUTH_TOKEN');
     let authEnabled = false;
+    let activeOutreachContact = null;
 
     function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -2446,10 +2467,14 @@
         document.getElementById(modalId).classList.add('active');
     }
     
-    function openOutreachModal(email) {
-        document.getElementById('emailTo').value = email;
-        document.getElementById('emailSubject').value = "Contacto Profesional // Propuesta de Candidatura";
-        document.getElementById('emailBody').value = `Hola,\n\nEspero que te encuentres muy bien. Me pongo en contacto contigo sobre oportunidades laborales en desarrollo backend y arquitectura de sistemas.\n\nHe estado analizando su ecosistema y me llama enormemente la atención su enfoque. Te comparto mis credenciales:\n- GitHub: ${profile.github_url || ''}\n- LinkedIn: ${profile.linkedin_url || ''}\n\nQuedo a tu disposición para agendar una breve llamada de introducción.\n\nUn cordial saludo,\n${profile.full_name || 'Tu nombre'}`;
+    function openOutreachModal(contactRef) {
+        const contactId = Number(contactRef);
+        activeOutreachContact = allContacts.find(item => Number(item.id) === contactId) || { email: String(contactRef || '') };
+        const company = activeOutreachContact.company || 'su equipo';
+        document.getElementById('emailTo').value = activeOutreachContact.email || '';
+        document.getElementById('emailSubject').value = `${profile.full_name || 'Candidatura'} <> ${company}`;
+        document.getElementById('emailContext').value = activeOutreachContact.notes || '';
+        document.getElementById('emailBody').value = `Hola ${activeOutreachContact.name || ''},\n\nTe escribo porque veo un posible encaje entre mi perfil (${profile.headline || 'perfil técnico'}) y las necesidades de ${company}.\n\nEnlaces relevantes:\n- GitHub: ${profile.github_url || ''}\n- LinkedIn: ${profile.linkedin_url || ''}\n- Portfolio: ${profile.portfolio_url || ''}\n\nQuedo disponible para compartir más contexto o coordinar una llamada breve.\n\nSaludos,\n${profile.full_name || 'Tu nombre'}`;
         openModal('emailModal');
     }
     
@@ -2658,6 +2683,7 @@
             const requirements = String(job.requirements || '').split(',').slice(0, 5);
             const isLive = job.is_live === true || job.is_live === 1 || job.scrape_mode === 'live';
             const scrapeMode = isLive ? 'LIVE' : 'DEMO';
+            const encodedJobUrl = encodeURIComponent(safeUrl(job.url));
             
             return `
             <div class="job-card ${source} ${hasHighMatch ? 'high-match' : ''}">
@@ -2702,7 +2728,7 @@
                     </div>
                     <span class="status-badge ${status}">${status}</span>
                     <div style="display:flex;gap:8px;margin-top:12px;">
-                        ${job.status !== 'applied' ? `<button class="btn btn-cyan" style="padding:6px 10px;font-size:7px;margin:0;" onclick="updateJobStatus(${Number(job.id)}, 'applied')">APPLY</button>` : ''}
+                        ${job.status !== 'applied' ? `<button class="btn btn-cyan" style="padding:6px 10px;font-size:7px;margin:0;" onclick="beginApplication(${Number(job.id)}, '${encodedJobUrl}')">APPLY</button>` : ''}
                         <button class="btn btn-pink" style="padding:6px 10px;font-size:7px;margin:0;width:auto;" onclick="deleteJob(${Number(job.id)})">❌</button>
                     </div>
                 </div>
@@ -2723,6 +2749,17 @@
             loadJobs();
             loadDashboard();
         }
+    }
+
+    async function beginApplication(jobId, encodedJobUrl) {
+        const jobUrl = decodeURIComponent(encodedJobUrl || '');
+        if (jobUrl && jobUrl !== '#') {
+            window.open(jobUrl, '_blank', 'noopener,noreferrer');
+        }
+        const confirmed = confirm('Se abrió la oferta real en una nueva pestaña. Marca como aplicada solo después de enviar la candidatura en la plataforma externa.');
+        if (!confirmed) return;
+        await updateJobStatus(jobId, 'applied');
+        switchView('applications');
     }
     
     async function deleteJob(jobId) {
@@ -2861,7 +2898,7 @@
                     </div>
                     <div style="display:flex;gap:8px;width:100%;" onclick="event.stopPropagation();">
                         ${c.linkedin_url ? `<a href="${safeUrl(c.linkedin_url)}" target="_blank" rel="noopener noreferrer" class="btn btn-cyan" style="flex:1;padding:8px;font-size:7px;margin:0;text-align:center;text-decoration:none;">LINKEDIN</a>` : ''}
-                        <button class="btn btn-pink" style="padding:8px 12px;font-size:7px;margin:0;" onclick="openOutreachModal('${escapeHtml(c.email || '')}')">✉️ OUTREACH</button>
+                        <button class="btn btn-pink" style="padding:8px 12px;font-size:7px;margin:0;" onclick="openOutreachModal(${Number(c.id)})">✉️ OUTREACH</button>
                     </div>
                 </div>
             </div>
@@ -2973,6 +3010,37 @@
     // ================================================
     // OUTREACH EMAILS COLD-CAMPAIGNS
     // ================================================
+    async function generateOutreachEmail() {
+        const email = document.getElementById('emailTo').value;
+        if (!email) {
+            showToast('Selecciona un contacto antes de generar el email', true);
+            return;
+        }
+
+        showLoading(true);
+        try {
+            const response = await apiCall('/api/email/generate', 'POST', {
+                contact_email: email,
+                contact_name: activeOutreachContact?.name || '',
+                company: activeOutreachContact?.company || '',
+                role: activeOutreachContact?.role || '',
+                linkedin_url: activeOutreachContact?.linkedin_url || '',
+                notes: activeOutreachContact?.notes || '',
+                extra_context: document.getElementById('emailContext').value,
+                tone: 'direct'
+            });
+
+            document.getElementById('emailSubject').value = response.subject || '';
+            document.getElementById('emailBody').value = response.body || '';
+            showToast(response.provider === 'groq' ? 'Email generado con Groq' : 'Email generado con plantilla contextual');
+        } catch (error) {
+            console.error('Error generating outreach email:', error);
+            showToast(error.message || 'No se pudo generar el email con IA', true);
+        } finally {
+            showLoading(false);
+        }
+    }
+
     async function sendOutreachEmail() {
         const email = document.getElementById('emailTo').value;
         const subject = document.getElementById('emailSubject').value;
