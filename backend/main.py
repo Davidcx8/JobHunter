@@ -455,6 +455,30 @@ def deduplicate_jobs(jobs: List[Dict[str, Any]], limit: int) -> tuple[List[Dict[
     return unique_jobs, max(len(jobs) - len(unique_jobs), 0)
 
 
+def find_duplicate_job(candidate: Dict[str, Any], existing_jobs: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    candidate_url = canonical_job_url(str(candidate.get("url") or ""))
+    candidate_semantic = (
+        normalized_job_text(candidate.get("title")),
+        normalized_job_text(candidate.get("company")),
+        normalized_job_text(candidate.get("location")),
+    )
+    has_candidate_semantic = bool(candidate_semantic[0] and candidate_semantic[1])
+
+    for job in existing_jobs:
+        existing_url = canonical_job_url(str(job.get("url") or ""))
+        if candidate_url and existing_url and candidate_url == existing_url:
+            return job
+
+        existing_semantic = (
+            normalized_job_text(job.get("title")),
+            normalized_job_text(job.get("company")),
+            normalized_job_text(job.get("location")),
+        )
+        if has_candidate_semantic and candidate_semantic == existing_semantic:
+            return job
+    return None
+
+
 def run_scraper_search(scraper: Any, keywords: str, location: str, limit: int) -> List[Dict[str, Any]]:
     signature = inspect.signature(scraper.search)
     kwargs: Dict[str, Any] = {"keywords": keywords, "limit": limit}
@@ -749,7 +773,8 @@ async def get_jobs(
     limit: int = Query(100)
 ):
     jobs = db.get_jobs(source=source, status=status, limit=limit)
-    return {"jobs": jobs}
+    unique_jobs, duplicates_hidden = deduplicate_jobs(jobs, limit)
+    return {"jobs": unique_jobs, "duplicates_hidden": duplicates_hidden}
 
 @app.post("/api/jobs")
 async def create_job(job_data: JobCreate):
@@ -767,6 +792,10 @@ async def create_job(job_data: JobCreate):
         user_skills
     )
     job_dict["match_score"] = score
+
+    existing_duplicate = find_duplicate_job(job_dict, db.get_jobs(limit=500))
+    if existing_duplicate:
+        return {"success": True, "job": existing_duplicate, "duplicate": True}
     
     # 3. Save to database
     saved_job = db.add_job(job_dict)
@@ -775,7 +804,7 @@ async def create_job(job_data: JobCreate):
     if score >= 80.0:
         WebhookDispatcher.send_notification(saved_job)
         
-    return {"success": True, "job": saved_job}
+    return {"success": True, "job": saved_job, "duplicate": False}
 
 @app.put("/api/jobs/{job_id}")
 async def update_job(
