@@ -9,6 +9,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "backend"))
 from scrapers.weworkremotely_scraper import WeWorkRemotelyScraper
 from scrapers.remotive_scraper import RemotiveScraper
 from scrapers.linkedin_scraper import LinkedInScraper
+from scrapers.web_search_scraper import WebSearchScraper
 
 class TestScrapers(unittest.TestCase):
     @patch('requests.Session.get')
@@ -119,6 +120,44 @@ class TestScrapers(unittest.TestCase):
         self.assertEqual(results[0]['source'], 'linkedin')
         # Check that it filtered or adjusted based on keyword
         self.assertTrue(any("python" in job['title'].lower() for job in results))
+
+    @patch('requests.Session.get')
+    def test_web_search_scraper_uses_public_jobs_api(self, mock_get):
+        json_data = {
+            "data": [
+                {
+                    "title": "Python Platform Engineer",
+                    "company_name": "RemoteCo",
+                    "location": "Remote",
+                    "url": "https://arbeitnow.com/jobs/remote-python-platform",
+                    "tags": ["Python", "FastAPI"],
+                    "created_at": 1780776000,
+                    "description": "Build Python APIs for remote products.",
+                    "remote": True,
+                },
+                {
+                    "title": "Sales Manager",
+                    "company_name": "SalesCo",
+                    "location": "Berlin",
+                    "url": "https://arbeitnow.com/jobs/sales",
+                    "tags": ["Sales"],
+                    "description": "Sales role.",
+                },
+            ]
+        }
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = json_data
+        mock_get.return_value = mock_response
+
+        scraper = WebSearchScraper()
+        results = scraper.search(keywords="Python", location="Remote", limit=5)
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["source"], "web")
+        self.assertEqual(results[0]["company"], "RemoteCo")
+        self.assertEqual(results[0]["scrape_mode"], "live")
+        self.assertIn("FastAPI", results[0]["requirements"])
 
 if __name__ == "__main__":
     unittest.main()

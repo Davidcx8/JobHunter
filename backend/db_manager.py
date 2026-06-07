@@ -736,6 +736,30 @@ class DatabaseManager:
             cursor.execute("UPDATE contacts SET sent_emails = sent_emails + 1, last_contact = ? WHERE email = ?", (today, email))
             conn.commit()
 
+    def delete_contact(self, contact_id: int) -> bool:
+        """Deletes a contact and its email history."""
+        if self.uses_supabase_primary:
+            try:
+                existing = self._supabase_required().table("contacts").select("id").eq("id", contact_id).limit(1).execute()
+                if not existing.data:
+                    return False
+                self._supabase_required().table("emails").delete().eq("contact_id", contact_id).execute()
+                self._supabase_required().table("contacts").delete().eq("id", contact_id).execute()
+                return True
+            except Exception as e:
+                logger.warning(f"Failed to delete contact {contact_id} from Supabase: {e}")
+                return False
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM contacts WHERE id = ?", (contact_id,))
+            if not cursor.fetchone():
+                return False
+            cursor.execute("DELETE FROM emails WHERE contact_id = ?", (contact_id,))
+            cursor.execute("DELETE FROM contacts WHERE id = ?", (contact_id,))
+            conn.commit()
+        return True
+
     # ==================== APPLICATIONS METHODS ====================
     def get_applications(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
         if self.uses_supabase_primary:

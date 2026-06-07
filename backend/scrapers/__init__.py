@@ -5,6 +5,7 @@ from .remotive_scraper import RemotiveScraper
 from .glassdoor_scraper import GlassdoorScraper
 from .ziprecruiter_scraper import ZipRecruiterScraper
 from .weworkremotely_scraper import WeWorkRemotelyScraper
+from .web_search_scraper import WebSearchScraper
 
 __all__ = [
     'LinkedInScraper',
@@ -12,5 +13,6 @@ __all__ = [
     'RemotiveScraper',
     'GlassdoorScraper',
     'ZipRecruiterScraper',
-    'WeWorkRemotelyScraper'
+    'WeWorkRemotelyScraper',
+    'WebSearchScraper'
 ]

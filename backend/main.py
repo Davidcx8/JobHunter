@@ -37,6 +37,7 @@ from scrapers.remotive_scraper import RemotiveScraper
 from scrapers.weworkremotely_scraper import WeWorkRemotelyScraper
 from scrapers.glassdoor_scraper import GlassdoorScraper
 from scrapers.ziprecruiter_scraper import ZipRecruiterScraper
+from scrapers.web_search_scraper import WebSearchScraper
 
 # Initialize database manager
 db = DatabaseManager(db_path=str(settings.resolved_db_path))
@@ -602,9 +603,11 @@ def build_candidate_packet(profile: Dict[str, Any], documents: List[Dict[str, An
             "portfolio": profile.get("portfolio_url") or "",
         },
         "cv": {
+            "id": latest_cv.get("id") if latest_cv else None,
             "name": latest_cv.get("name") if latest_cv else "",
             "filename": latest_cv.get("filename") if latest_cv else "",
             "file_url": latest_cv.get("file_url") if latest_cv else "",
+            "download_url": f"/api/documents/download/{latest_cv.get('id')}" if latest_cv and latest_cv.get("id") else "",
         },
     }
 
@@ -971,6 +974,14 @@ async def create_contact(contact_data: ContactCreate):
     saved = db.add_contact(contact_data.model_dump())
     return {"success": True, "contact": saved}
 
+
+@app.delete("/api/contacts/{contact_id}")
+async def delete_contact(contact_id: int):
+    deleted = db.delete_contact(contact_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Contact not found.")
+    return {"success": True}
+
 # --- Applications Endpoints ---
 @app.get("/api/applications")
 async def get_applications(status: Optional[str] = Query(None)):
@@ -1028,6 +1039,8 @@ async def scrape_jobs(
         scraper = GlassdoorScraper()
     elif source_lower == "ziprecruiter":
         scraper = ZipRecruiterScraper()
+    elif source_lower == "web":
+        scraper = WebSearchScraper()
     else:
         raise HTTPException(status_code=400, detail=f"Source '{source}' is not supported.")
         

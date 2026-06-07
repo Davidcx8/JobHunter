@@ -2212,6 +2212,9 @@
                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
                     <input type="checkbox" value="ziprecruiter"> ZipRecruiter (BS4)
                 </label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input type="checkbox" value="web" checked> Web API (Arbeitnow)
+                </label>
             </div>
         </div>
         <button class="btn btn-pink" style="margin-top:10px;" onclick="startScraping()">🏁 RUN TRACKING SEQUENCE</button>
@@ -2799,7 +2802,7 @@
                     <strong>LinkedIn:</strong> ${links.linkedin ? `<a href="${safeUrl(links.linkedin)}" target="_blank" rel="noopener noreferrer" style="color:var(--text-cyber);">${escapeHtml(links.linkedin)}</a>` : 'N/A'}<br>
                     <strong>GitHub:</strong> ${links.github ? `<a href="${safeUrl(links.github)}" target="_blank" rel="noopener noreferrer" style="color:var(--text-cyber);">${escapeHtml(links.github)}</a>` : 'N/A'}<br>
                     <strong>Portfolio:</strong> ${links.portfolio ? `<a href="${safeUrl(links.portfolio)}" target="_blank" rel="noopener noreferrer" style="color:var(--text-cyber);">${escapeHtml(links.portfolio)}</a>` : 'N/A'}<br>
-                    <strong>CV:</strong> ${escapeHtml(cv.name || cv.filename || 'No CV detectado')}
+                    <strong>CV:</strong> ${cv.download_url ? `<a href="${safeUrl(cv.download_url)}" target="_blank" rel="noopener noreferrer" style="color:var(--text-cyber);">${escapeHtml(cv.name || cv.filename || 'Descargar CV')}</a>` : escapeHtml(cv.name || cv.filename || 'No CV detectado')}
                 </div>
             </div>
             <div style="padding:12px;border:1px solid var(--border-dark);background:#090a0f;">
@@ -2968,6 +2971,7 @@
                     <div style="display:flex;gap:8px;width:100%;" onclick="event.stopPropagation();">
                         ${c.linkedin_url ? `<a href="${safeUrl(c.linkedin_url)}" target="_blank" rel="noopener noreferrer" class="btn btn-cyan" style="flex:1;padding:8px;font-size:7px;margin:0;text-align:center;text-decoration:none;">LINKEDIN</a>` : ''}
                         <button class="btn btn-pink" style="padding:8px 12px;font-size:7px;margin:0;" onclick="openOutreachModal(${Number(c.id)})">✉️ OUTREACH</button>
+                        <button class="btn btn-pink" style="padding:8px 10px;font-size:7px;margin:0;width:auto;" onclick="deleteContact(${Number(c.id)})">❌</button>
                     </div>
                 </div>
             </div>
@@ -3071,6 +3075,17 @@
         if (response.success) {
             showToast('Contacto registrado correctamente');
             closeModal('contactModal');
+            loadContacts();
+            loadDashboard();
+        }
+    }
+
+    async function deleteContact(contactId) {
+        if (!confirm('¿Seguro que deseas eliminar este contacto y su historial de emails?')) return;
+        const response = await apiCall(`/api/contacts/${contactId}`, 'DELETE');
+        if (response.success) {
+            if (selectedContactId === contactId) closeContactDetails();
+            showToast('Contacto eliminado');
             loadContacts();
             loadDashboard();
         }

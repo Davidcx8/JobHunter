@@ -32,3 +32,13 @@ def test_outreach_modal_can_generate_ai_email():
     assert "generateOutreachEmail(" in html
     assert "/api/email/generate" in html
     assert "GENERAR CON IA" in html
+
+
+def test_contacts_can_be_deleted_from_ui_and_web_source_is_available():
+    html = FRONTEND_HTML.read_text()
+
+    assert "deleteContact(" in html
+    assert "/api/contacts/${contactId}" in html
+    assert 'value="web"' in html
+    assert "Web API" in html
+    assert "cv.download_url" in html

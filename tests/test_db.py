@@ -124,6 +124,10 @@ class TestDatabaseManager(unittest.TestCase):
         self.assertTrue(len(contacts) > 0)
         self.assertTrue(any(c.get("email") == "jane@recruiter.com" for c in contacts))
 
+        self.assertTrue(self.db.delete_contact(contact.get("id")))
+        contacts_after = self.db.get_contacts()
+        self.assertFalse(any(c.get("email") == "jane@recruiter.com" for c in contacts_after))
+
     def test_applications_crud(self):
         app_data = {
             "company": "TechInc",

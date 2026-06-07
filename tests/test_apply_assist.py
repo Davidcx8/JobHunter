@@ -56,6 +56,35 @@ def test_apply_assist_identifies_platform_and_candidate_packet(monkeypatch, tmp_
     assert "Open the Lever hosted application form" in payload["steps"][0]
 
 
+def test_apply_assist_exposes_downloadable_cv_link(monkeypatch, tmp_path):
+    main = import_main(monkeypatch, tmp_path)
+    main.db.save_profile({"full_name": "Jose David Castillo", "email": "jose@example.com"})
+    main.db.add_document(
+        {
+            "name": "Main CV",
+            "filename": "cv.pdf",
+            "file_type": "cv",
+            "file_path": str(tmp_path / "cv.pdf"),
+            "file_size": 100,
+        }
+    )
+    job = main.db.add_job(
+        {
+            "title": "Backend Engineer",
+            "company": "Acme",
+            "location": "Remote",
+            "url": "https://jobs.lever.co/acme/abc123",
+            "source": "manual",
+        }
+    )
+    client = TestClient(main.app)
+
+    payload = client.get(f"/api/jobs/{job['id']}/apply-assist").json()
+
+    assert payload["candidate"]["cv"]["name"] == "Main CV"
+    assert payload["candidate"]["cv"]["download_url"].startswith("/api/documents/download/")
+
+
 def test_apply_assist_rejects_missing_job(monkeypatch, tmp_path):
     main = import_main(monkeypatch, tmp_path)
     client = TestClient(main.app)
